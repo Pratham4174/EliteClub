@@ -1,6 +1,6 @@
 import type { DashboardStats, PlayBoxUser, ScanResponse, Transaction } from "../types";
 
-const BACKEND_URL = "http://localhost:8080";
+const BACKEND_URL = "https://playboxcardbackend-production.up.railway.app/playbox";
 
 export const api = {
   scanCard: async (cardUid: string): Promise<ScanResponse> => {
