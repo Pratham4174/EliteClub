@@ -16,7 +16,7 @@ import {
   UserPlus,
   Users
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./css/main.css"; // Custom CSS
 import "./index.css"; // Tailwind
@@ -48,9 +48,15 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [adminInfo, setAdminInfo] = useState<any>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const scannerInputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
-
+  useEffect(() => {
+    // Focus scanner input when switching from admin view
+    if (!isAdminView && scannerInputRef.current) {
+      scannerInputRef.current.focus();
+    }
+  }, [isAdminView]);
   useEffect(() => {
     if (showDeductModal) {
       const admin = localStorage.getItem("admin");
@@ -134,7 +140,7 @@ export default function App() {
       setApiError(null);
       
       // Redirect to login page
-      navigate("/login");
+      window.location.href = "/login";
     }
   };
 
@@ -215,21 +221,37 @@ export default function App() {
       setStatus({ text: "Minimum add amount is ₹500", type: "error" });
       return;
     }
-
+  
     setIsTxnLoading(true);
     setStatus({ text: "Adding amount...", type: "info" });
-
+  
     try {
-      const user = await api.addBalance(activeUid, amount);
+      // Get admin name from adminInfo or localStorage
+      const adminName = adminInfo?.username || 
+                       deductorName || 
+                       localStorage.getItem('adminUsername') || 
+                       'Unknown Admin';
+      
+      // Pass adminName as the third parameter
+      const user = await api.addBalance(activeUid, amount, adminName);
+      
       setBalance(user.balance);
-      setStatus({ text: `₹${amount} added successfully!`, type: "success" });
+      
+      // Update status message to show who added the balance
+      setStatus({ 
+        text: `₹${amount} added by ${adminName} successfully!`, 
+        type: "success" 
+      });
+      
     } catch (error: any) {
-      setStatus({ text: `Error: ${error.message || "Failed to add balance"}`, type: "error" });
+      setStatus({ 
+        text: `Error: ${error.message || "Failed to add balance"}`, 
+        type: "error" 
+      });
     } finally {
       setIsTxnLoading(false);
     }
   };
-
   const handleDeductBalance = async () => {
     if (!deductorName.trim() || !description.trim()) {
       setStatus({ text: "Deductor name & description required", type: "warning" });
@@ -410,6 +432,20 @@ export default function App() {
             <Settings size={16} className="btn-icon" />
             {isAdminView ? "Back to RFID" : "Find Users"}
           </button>
+          {adminInfo?.role === "Owner" && (
+  <button
+    onClick={() => navigate("/owner")}
+    className="btn btn-outline"
+    style={{
+      border: "1px solid rgba(255,255,255,0.3)",
+      color: "white",
+      marginLeft: "8px"
+    }}
+  >
+    Owner Dashboard
+  </button>
+)}
+
           {isLoggedIn && (
             <button
               onClick={handleLogout}
@@ -424,6 +460,7 @@ export default function App() {
               <LogOut size={16} className="btn-icon" />
               Logout
             </button>
+            
           )}
         </div>
       </header>
@@ -440,6 +477,8 @@ export default function App() {
               </div>
               <div className="scanner-container">
                 <input
+                  ref={scannerInputRef} // Add this line
+                  autoFocus
                   placeholder="Enter RFID UID or tap card"
                   value={cardUid}
                   onChange={(e) => setCardUid(e.target.value)}

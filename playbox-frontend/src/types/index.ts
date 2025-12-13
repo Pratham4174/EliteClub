@@ -36,6 +36,23 @@ export interface ScanResponse {
     timestamp: string;
     adminName?: string;
     previousBalance?: number;
-    newBalance?: number;
+    balanceAfter?: number;
   }
-  
+
+  export interface FilterState {
+    userId?: number;
+    adminName?: string;
+    startDate?: string;  // Format: YYYY-MM-DD
+    endDate?: string;    // Format: YYYY-MM-DD
+    type?: 'ADD' | 'DEDUCT' | 'NEW_USER';
+  }
+  // Add PageResponse type
+export interface PageResponse<T> {
+    content: T[];
+    pageNumber: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+    first: boolean;
+    last: boolean;
+  }

@@ -65,13 +65,23 @@ export const api = {
     return await res.json();
   },
 
-  addBalance: async (cardUid: string, amount: number): Promise<PlayBoxUser> => {
-    const res = await fetch(
-      `${BACKEND_URL}/api/users/add?cardUid=${cardUid}&amount=${amount}`,
-      { method: "POST" }
-    );
+  addBalance: async (cardUid: string, amount: number, adminName?: string): Promise<PlayBoxUser> => {
+    const res = await fetch(`${BACKEND_URL}/api/users/add?cardUid=${cardUid}&amount=${amount}&adminName=${adminName}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        cardUid,
+        amount,
+        adminName: adminName || "Unknown Admin"
+      })
+    });
     
-    if (!res.ok) throw new Error("Add balance failed");
+    if (!res.ok) {
+      const error = await res.text();
+      throw new Error(error || "Add balance failed");
+    }
     return await res.json();
   },
 
@@ -154,3 +164,84 @@ export const api = {
     );
   },
 };
+// utils/api.ts - Update the mapTransaction function
+const mapTransaction = (item: any): Transaction => ({
+    id: item.id,
+    userId: item.userId,
+    userName: item.userName || `User ${item.userId}`, // Map from backend
+    type: item.type,
+    amount: item.amount,
+    description: item.description,
+    timestamp: item.timestamp,
+    adminName: item.adminName,
+    previousBalance: item.previousBalance,
+    balanceAfter: item.balanceAfter, // Map balanceAfter to newBalance
+  });
+export const transactionApi = {
+    // Get all transactions
+    getAll: async (): Promise<Transaction[]> => {
+      const response = await fetch(`${BACKEND_URL}/api/transactions/all`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch transactions: ${response.status}`);
+      }
+      const data = await response.json();
+      
+      // Map backend fields to frontend Transaction type
+      return data.map((item: any) => ({
+        id: item.id,
+        userId: item.userId,
+        userName: item.userName || `User ${item.userId}`,
+        type: item.type, // Should be 'ADD' | 'DEDUCT' | 'NEW_USER'
+        amount: item.amount || 0,
+        description: item.description,
+        timestamp: item.timestamp || item.createdAt,
+        adminName: item.adminName,
+        previousBalance: item.previousBalance,
+        balanceAfter: item.balanceAfter
+      }));
+    },
+  
+    // Filter transactions - matches your Java controller
+    filter: async (filters: {
+      userId?: number;
+      adminName?: string;
+      startDate?: string;
+      endDate?: string;
+      type?: string;
+    }): Promise<Transaction[]> => {
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      if (filters.userId) params.append('userId', filters.userId.toString());
+      if (filters.adminName) params.append('adminName', filters.adminName);
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      
+      // Note: Your Java controller doesn't have 'type' parameter
+      // If you need type filtering, you'll need to add it to the backend
+      
+      const url = `${BACKEND_URL}/api/transactions/filter?${params.toString()}`;
+      console.log('Filter URL:', url);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to filter transactions: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Map backend fields to frontend Transaction type
+      return data.map((item: any) => ({
+        id: item.id,
+        userId: item.userId,
+        userName: item.userName || `User ${item.userId}`,
+        type: item.type,
+        amount: item.amount || 0,
+        description: item.description,
+        timestamp: item.timestamp || item.createdAt,
+        adminName: item.adminName,
+        previousBalance: item.previousBalance,
+        newBalance: item.newBalance
+      }));
+    }
+  };
