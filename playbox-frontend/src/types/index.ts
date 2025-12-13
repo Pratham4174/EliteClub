@@ -32,8 +32,10 @@ export interface ScanResponse {
     userName: string;
     type: 'ADD' | 'DEDUCT' | 'NEW_USER';
     amount: number;
-    previousBalance: number;
-    newBalance: number;
+    description?: string; // Add this line - make it optional
     timestamp: string;
     adminName?: string;
+    previousBalance?: number;
+    newBalance?: number;
   }
+  

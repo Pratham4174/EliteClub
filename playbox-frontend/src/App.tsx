@@ -6,6 +6,7 @@ import {
   Gamepad2,
   Info,
   Loader2,
+  LogOut,
   Minus,
   Plus,
   Scan,
@@ -15,7 +16,8 @@ import {
   UserPlus,
   Users
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./css/main.css"; // Custom CSS
 import "./index.css"; // Tailwind
 import type { PlayBoxUser, StatusType } from "./types";
@@ -40,6 +42,101 @@ export default function App() {
   const [newPhone, setNewPhone] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [isTxnLoading, setIsTxnLoading] = useState(false);
+  const [showDeductModal, setShowDeductModal] = useState(false);
+  const [deductorName, setDeductorName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [adminInfo, setAdminInfo] = useState<any>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (showDeductModal) {
+      const admin = localStorage.getItem("admin");
+      if (admin) {
+        try {
+          const parsedAdmin = JSON.parse(admin);
+          setDeductorName(parsedAdmin.name || parsedAdmin.username || "");
+        } catch (error) {
+          console.error("Error parsing admin data:", error);
+        }
+      }
+    }
+  }, [showDeductModal]);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkAuth = () => {
+      try {
+        const loggedIn = localStorage.getItem("isAdminLoggedIn") === "true";
+        const adminData = localStorage.getItem("admin");
+        
+        setIsLoggedIn(loggedIn);
+        if (adminData) {
+          const parsedAdmin = JSON.parse(adminData);
+          setAdminInfo(parsedAdmin);
+          setDeductorName(parsedAdmin.username || "");
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  const handleLogout = () => {
+    if (window.confirm("Are you sure you want to logout?")) {
+      // Clear ALL localStorage items related to the app
+      localStorage.removeItem("isAdminLoggedIn");
+      localStorage.removeItem("admin");
+      
+      // Optional: Clear any other app-specific localStorage items
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith("playbox_") || key?.includes("admin")) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Reset all state
+      setIsLoggedIn(false);
+      setAdminInfo(null);
+      setIsAdminView(false);
+      
+      // Clear other state if needed
+      setCardUid("");
+      setActiveUid("");
+      setName(null);
+      setBalance(null);
+      setStatus({
+        text: "Waiting for RFID scan...",
+        type: "info"
+      });
+      setIsNewUser(false);
+      setAdminUsers([]);
+      setSearchPhone("");
+      setAmount(500);
+      setApiError(null);
+      
+      // Redirect to login page
+      navigate("/login");
+    }
+  };
 
   const handleScan = async (uid: string) => {
     if (!uid.trim()) return;
@@ -67,9 +164,9 @@ export default function App() {
           type: "success" 
         });
       }
-    } catch {
+    } catch (error: any) {
       setStatus({ 
-        text: "Backend connection error", 
+        text: `Error: ${error.message || "Backend connection error"}`, 
         type: "error" 
       });
     } finally {
@@ -105,9 +202,9 @@ export default function App() {
         text: "User created successfully!", 
         type: "success" 
       });
-    } catch {
+    } catch (error: any) {
       setStatus({ 
-        text: "Backend error while creating user", 
+        text: `Error: ${error.message || "Backend error while creating user"}`, 
         type: "error" 
       });
     }
@@ -126,42 +223,109 @@ export default function App() {
       const user = await api.addBalance(activeUid, amount);
       setBalance(user.balance);
       setStatus({ text: `₹${amount} added successfully!`, type: "success" });
-    } catch {
-      setStatus({ text: "Failed to add balance", type: "error" });
+    } catch (error: any) {
+      setStatus({ text: `Error: ${error.message || "Failed to add balance"}`, type: "error" });
     } finally {
       setIsTxnLoading(false);
     }
   };
 
   const handleDeductBalance = async () => {
-    if (!activeUid || amount <= 0) {
-      setStatus({ text: "Enter a valid amount", type: "error" });
+    if (!deductorName.trim() || !description.trim()) {
+      setStatus({ text: "Deductor name & description required", type: "warning" });
       return;
     }
-
+  
     setIsTxnLoading(true);
     setStatus({ text: "Deducting amount...", type: "info" });
-
+  
     try {
-      const user = await api.deductBalance(activeUid, amount);
+      const user = await api.deductBalance(
+        activeUid,
+        amount,
+        deductorName,
+        description
+      );
+  
       setBalance(user.balance);
-      setStatus({ text: `₹${amount} deducted successfully!`, type: "success" });
-    } catch {
-      setStatus({ text: "Insufficient balance", type: "error" });
+      setStatus({
+        text: `₹${amount} deducted by ${deductorName}`,
+        type: "success",
+      });
+  
+      // reset modal
+      setShowDeductModal(false);
+      setDeductorName("");
+      setDescription("");
+    } catch (error: any) {
+      setStatus({ text: `Error: ${error.message || "Insufficient balance"}`, type: "error" });
     } finally {
       setIsTxnLoading(false);
     }
   };
-
+  
+  // UPDATED: loadAllUsers with better error handling
   const loadAllUsers = async () => {
     try {
+      console.log("Starting to load all users...");
       setLoading(true);
+      setApiError(null);
+      
       const users = await api.getAllUsers();
-      setAdminUsers(users);
-    } catch (error) {
+      console.log("API response received:", users);
+      
+      if (Array.isArray(users)) {
+        setAdminUsers(users);
+        setStatus({ 
+          text: `Successfully loaded ${users.length} users`, 
+          type: "success" 
+        });
+      } else {
+        throw new Error("Invalid response format from API");
+      }
+    } catch (error: any) {
       console.error("Failed to load users:", error);
+      setApiError(error.message || "Failed to load users");
+      setStatus({ 
+        text: `Error: ${error.message || "Failed to load users"}`, 
+        type: "error" 
+      });
+      
+      // Add mock data for testing if API fails
+      const mockUsers: PlayBoxUser[] = [
+        { 
+          id: 1, 
+          name: "John Doe", 
+          phone: "9876543210", 
+          cardUid: "ABC123DEF456", 
+          balance: 1500,
+          email: "john@example.com"
+        },
+        { 
+          id: 2, 
+          name: "Jane Smith", 
+          phone: "9876543211", 
+          cardUid: "DEF456GHI789", 
+          balance: 2500,
+          email: "jane@example.com"
+        },
+        { 
+          id: 3, 
+          name: "Bob Wilson", 
+          phone: "9876543212", 
+          cardUid: "GHI789JKL012", 
+          balance: 500,
+          email: "bob@example.com"
+        },
+      ];
+      setAdminUsers(mockUsers);
+      setStatus({ 
+        text: "Using demo data (API failed)", 
+        type: "warning" 
+      });
     } finally {
       setLoading(false);
+      console.log("Finished loading users");
     }
   };
 
@@ -177,8 +341,8 @@ export default function App() {
       setIsNewUser(false);
       setIsAdminView(false);
       setStatus({ text: "User loaded via phone search ✅", type: "success" });
-    } catch {
-      setStatus({ text: "No user found", type: "warning" });
+    } catch (error: any) {
+      setStatus({ text: `Error: ${error.message || "No user found"}`, type: "warning" });
     } finally {
       setLoading(false);
     }
@@ -223,13 +387,18 @@ export default function App() {
             </div>
             <div>
               <h1 className="app-title">🎮 PlayBox Sports Arena</h1>
-              <p className="app-subtitle">Tap RFID card to begin transaction</p>
+              <p className="app-subtitle">
+                {adminInfo ? `Logged in as ${adminInfo.username} (${adminInfo.role})` : "Tap RFID card to begin transaction"}
+              </p>
             </div>
           </div>
           <button
             onClick={() => {
               setIsAdminView(!isAdminView);
-              if (!isAdminView) loadAllUsers();
+              if (!isAdminView) {
+                console.log("Switching to admin view, loading users...");
+                loadAllUsers();
+              }
             }}
             className="btn btn-outline"
             style={{
@@ -239,8 +408,23 @@ export default function App() {
             }}
           >
             <Settings size={16} className="btn-icon" />
-            {isAdminView ? "Back to RFID" : "Admin Panel"}
+            {isAdminView ? "Back to RFID" : "Find Users"}
           </button>
+          {isLoggedIn && (
+            <button
+              onClick={handleLogout}
+              className="btn btn-outline logout-btn"
+              style={{
+                border: "1px solid rgba(255,255,255,0.3)",
+                color: "white",
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                marginLeft: '8px'
+              }}
+            >
+              <LogOut size={16} className="btn-icon" />
+              Logout
+            </button>
+          )}
         </div>
       </header>
 
@@ -307,6 +491,20 @@ export default function App() {
                 <h2 className="section-title">Admin Panel</h2>
               </div>
               
+              {/* Debug Info */}
+              {apiError && (
+                <div className="debug-info" style={{
+                  padding: '12px',
+                  marginBottom: '16px',
+                  backgroundColor: '#fee2e2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '8px',
+                  color: '#991b1b'
+                }}>
+                  <strong>API Error:</strong> {apiError}
+                </div>
+              )}
+              
               {/* Search Section */}
               <div className="search-container">
                 <div style={{ position: 'relative', flex: 1 }}>
@@ -333,52 +531,99 @@ export default function App() {
                 </button>
                 <button
                   onClick={loadAllUsers}
+                  disabled={loading}
                   className="btn btn-outline"
                   style={{ marginLeft: 8 }}
                 >
-                  <Users size={16} className="btn-icon" />
-                  Load All Users
+                  {loading ? (
+                    <>
+                      <Loader2 size={16} className="spinner btn-icon" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Users size={16} className="btn-icon" />
+                      Load All Users
+                    </>
+                  )}
                 </button>
               </div>
 
-              {/* Users Table */}
-              <div className="table-container">
-                <table className="table">
-                  <thead>
-                    <tr className="table-header">
-                      <th className="table-header-cell">Name</th>
-                      <th className="table-header-cell">Phone</th>
-                      <th className="table-header-cell">RFID</th>
-                      <th className="table-header-cell" style={{ textAlign: 'right' }}>Balance</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {adminUsers.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="table-row"
-                        onClick={() => handleSelectUser(user)}
-                      >
-                        <td className="table-cell">{user.name}</td>
-                        <td className="table-cell">{user.phone}</td>
-                        <td className="table-cell">
-                          <span className="badge">
-                            {user.cardUid}
-                          </span>
-                        </td>
-                        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 600 }}>
-                          ₹{user.balance.toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {/* Loading State */}
+              {loading && (
+                <div style={{ 
+                  padding: '40px', 
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '16px'
+                }}>
+                  <Loader2 size={32} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+                  <p style={{ color: '#6b7280' }}>Loading users...</p>
+                </div>
+              )}
 
-              {adminUsers.length === 0 && !loading && (
-                <div className="empty-state">
+              {/* Users Table */}
+              {!loading && adminUsers.length > 0 && (
+                <div className="table-container">
+                  <table className="table">
+                    <thead>
+                      <tr className="table-header">
+                        <th className="table-header-cell">Name</th>
+                        <th className="table-header-cell">Phone</th>
+                        <th className="table-header-cell">RFID</th>
+                        <th className="table-header-cell" style={{ textAlign: 'right' }}>Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {adminUsers.map((user) => (
+                        <tr
+                          key={user.id}
+                          className="table-row"
+                          onClick={() => handleSelectUser(user)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <td className="table-cell">{user.name}</td>
+                          <td className="table-cell">{user.phone}</td>
+                          <td className="table-cell">
+                            <span className="badge">
+                              {user.cardUid}
+                            </span>
+                          </td>
+                          <td className="table-cell" style={{ textAlign: 'right', fontWeight: 600 }}>
+                            ₹{user.balance.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {!loading && adminUsers.length === 0 && (
+                <div className="empty-state" style={{ padding: '40px', textAlign: 'center' }}>
                   <Users size={48} style={{ opacity: 0.2, marginBottom: 16 }} />
-                  <p style={{ color: '#6b7280' }}>No users found. Click "Load All Users" to display users.</p>
+                  <p style={{ color: '#6b7280', marginBottom: 16 }}>
+                    No users found. Click "Load All Users" to display users.
+                  </p>
+                  <button
+                    onClick={() => {
+                      console.log("Adding test user...");
+                      const testUser: PlayBoxUser = {
+                        id: Date.now(),
+                        name: "Test User",
+                        phone: "1234567890",
+                        cardUid: "TEST123",
+                        balance: 1000,
+                        email: "test@example.com"
+                      };
+                      setAdminUsers([testUser]);
+                    }}
+                    className="btn btn-outline"
+                  >
+                    Add Test User
+                  </button>
                 </div>
               )}
             </div>
@@ -452,7 +697,7 @@ export default function App() {
                           )}
                         </button>
                         <button
-                          onClick={handleDeductBalance}
+                          onClick={() => setShowDeductModal(true)}
                           disabled={isTxnLoading || amount <= 0}
                           className="btn btn-destructive"
                           style={{ flex: 1, height: 48 }}
@@ -480,7 +725,7 @@ export default function App() {
                       <UserPlus size={20} className="btn-icon" />
                       <h2 className="section-title">Create New User</h2>
                     </div>
-
+                    
                     {/* RFID Display */}
                     <div className="rfid-display">
                       <CreditCard size={20} style={{ marginRight: 8, color: '#6b7280' }} />
@@ -553,6 +798,95 @@ export default function App() {
             </>
           )}
         </div>
+        
+        {/* Deduct Modal */}
+        {showDeductModal && (
+          <div className="modal-overlay" onClick={() => setShowDeductModal(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              {/* Modal Header */}
+              <div style={{ position: 'relative' }}>
+                <h2 className="modal-title">Confirm Deduction</h2>
+                <button 
+                  onClick={() => setShowDeductModal(false)}
+                  className="modal-close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Amount Preview */}
+              <div className="amount-preview">
+                <span className="amount-label">Deduction Amount</span>
+                <div className="amount-value">₹{amount}</div>
+              </div>
+
+              {/* Activity Select */}
+              <div className="form-group">
+                <label className="label">Select Activity *</label>
+                <select
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="input-field"
+                  style={{ width: '100%', padding: '10px 12px' }}
+                  required
+                >
+                  <option value="">Select Activity</option>
+                  <option value="Swimming Pool">Swimming Pool</option>
+                  <option value="Cricket">Cricket</option>
+                  <option value="Pool">Pool</option>
+                  <option value="PlayStation">PlayStation</option>
+                  <option value="Pickleball">Pickleball</option>
+                </select>
+              </div>
+
+              {/* Deductor Name - READONLY */}
+              <div className="form-group">
+                <label className="label">Deducted By *</label>
+                <div className="deductor-display">
+                  <div className="deductor-info">
+                    <div className="deductor-name">{adminInfo?.username || deductorName}</div>
+                    <div className="deductor-role">({adminInfo?.role || 'Staff'})</div>
+                  </div>
+                  <input
+                    type="hidden"
+                    value={adminInfo?.username || deductorName}
+                    onChange={(e) => setDeductorName(e.target.value)}
+                  />
+                </div>
+                <p className="hint" style={{ marginTop: '8px', fontSize: '0.75rem', color: '#6b7280' }}>
+                  This field cannot be changed
+                </p>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="modal-actions">
+                <button
+                  onClick={() => setShowDeductModal(false)}
+                  className="btn btn-outline"
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleDeductBalance}
+                  className="btn btn-destructive"
+                  disabled={isTxnLoading || !description.trim()}
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  {isTxnLoading ? (
+                    <>
+                      <Loader2 size={16} className="spinner btn-icon" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Confirm Deduction"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Footer */}
