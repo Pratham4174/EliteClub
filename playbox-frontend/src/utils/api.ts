@@ -1,7 +1,7 @@
 import type { DailyRevenueDashboard, PlayBoxUser, ScanResponse, Transaction } from "../types";
 
-const BACKEND_URL = "http://localhost:8080/playbox";
-// const BACKEND_URL = "https://playboxcardbackend-production.up.railway.app/playbox";
+// const BACKEND_URL = "http://localhost:8080/playbox";
+const BACKEND_URL = "https://playboxcardbackend-production.up.railway.app/playbox";
 
 export const api = {
   // ====================
