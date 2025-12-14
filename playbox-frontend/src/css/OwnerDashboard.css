@@ -709,3 +709,27 @@
     background: #e5e7eb;
     color: #6b7280;
   }
+  .dashboard-section {
+    margin-bottom: 32px;
+  }
+  
+  .dashboard-section-header {
+    margin-bottom: 16px;
+  }
+  
+  .dashboard-section-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .dashboard-section-subtitle {
+    font-size: 0.85rem;
+    color: #00040b;
+    margin-top: 4px;
+  }
+  
+  

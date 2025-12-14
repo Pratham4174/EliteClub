@@ -1,4 +1,4 @@
-import type { Transaction } from "@/types";
+import type { DailyRevenueDashboard, Transaction } from "@/types";
 import {
     BarChart3,
     Calendar,
@@ -10,6 +10,7 @@ import {
     Minus,
     Plus,
     RefreshCw,
+    User,
     UserPlus,
     Users
 } from "lucide-react";
@@ -17,7 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import TransactionFilters from "../components/transactions/TransactionFilters";
 import TransactionTable from "../components/transactions/TransactionTable";
 import "../css/OwnerDashboard.css";
-import { transactionApi } from "../utils/api";
+import { dashboardApi, transactionApi } from "../utils/api";
 import { exportToCSV } from "../utils/export";
 
 // Define filter type matching your Transaction type
@@ -42,6 +43,16 @@ export default function OwnerDashboard() {
     text: "Ready to filter transactions",
     type: "info"
   });
+  const [data, setData] = useState<DailyRevenueDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+    dashboardApi.getTodayRevenue()
+      .then(setData)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Load initial data
   useEffect(() => {
@@ -312,6 +323,8 @@ const handleFilter = useCallback(async (filters: FilterState) => {
             Monitor all transactions and financial activities
           </p>
         </div>
+
+        
         
         <div className="header-actions">
           <button 
@@ -351,6 +364,91 @@ const handleFilter = useCallback(async (filters: FilterState) => {
           </div>
         </div>
       </div>
+      {/* TODAY STATS */}
+
+      <div className="dashboard-section">
+  <div className="dashboard-section-header">
+    <h2 className="dashboard-section-title">
+      📅 Today Stats
+    </h2>
+    <p className="dashboard-section-subtitle">
+      Real-time performance & activity summary
+    </p>
+  </div>
+  
+      
+{data && (
+  <div className="stats-grid today">
+    <div className="stat-card add">
+      <div className="stat-icon"><Plus size={22} /></div>
+      <div className="stat-content">
+        <h3>Today Deposits</h3>
+        <p className="stat-value">{formatCurrency(data.totalDeposited)}</p>
+      </div>
+    </div>
+
+    <div className="stat-card deduct">
+      <div className="stat-icon"><Minus size={22} /></div>
+      <div className="stat-content">
+        <h3>Today Deductions</h3>
+        <p className="stat-value">{formatCurrency(data.totalDeducted)}</p>
+      </div>
+    </div>
+
+    <div className="stat-card net">
+      <div className="stat-icon"><IndianRupee size={22} /></div>
+      <div className="stat-content">
+        <h3>Today Net Cashflow</h3>
+        <p className="stat-value">{formatCurrency(data.netCashflow)}</p>
+        <p className="stat-sub">
+          {data.netCashflow >= 0 ? "Profit" : "Loss"}
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+{data?.mostActiveStaff?.length ? (
+  <div className="stats-grid today">
+    {data.mostActiveStaff.slice(0, 3).map((staff, index) => (
+      <div key={index} className="stat-card users">
+        <div className="stat-icon">
+          <Users size={22} />
+        </div>
+        <div className="stat-content">
+          <h3>Top Staff #{index + 1}</h3>
+          <p className="stat-value">
+            {staff.name || "Unknown"}
+          </p>
+          <p className="stat-sub">
+            {staff.count} transactions
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+) : null}
+
+{data?.mostActiveUsers?.length ? (
+  <div className="stats-grid today">
+    {data.mostActiveUsers.slice(0, 3).map((user, index) => (
+      <div key={index} className="stat-card net">
+        <div className="stat-icon">
+          <User size={22} />
+        </div>
+        <div className="stat-content">
+          <h3>Top User #{index + 1}</h3>
+          <p className="stat-value">
+            {user.name || "Unknown"}
+          </p>
+          <p className="stat-sub">
+            {user.count} transactions
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+) : null}
+</div>
 
       {/* Search Bar
       <div className="search-container">
@@ -379,6 +477,15 @@ const handleFilter = useCallback(async (filters: FilterState) => {
       </div> */}
 
       {/* Statistics Cards */}
+      <div className="dashboard-section">
+  <div className="dashboard-section-header">
+    <h2 className="dashboard-section-title">
+      📅 Overall Stats
+    </h2>
+    <p className="dashboard-section-subtitle">
+      Real-time performance & activity summary
+    </p>
+  </div>
       <div className="stats-grid">
         <div className="stat-card add">
           <div className="stat-icon">
@@ -437,6 +544,7 @@ const handleFilter = useCallback(async (filters: FilterState) => {
             </p>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Filters Section */}

@@ -56,3 +56,17 @@ export interface PageResponse<T> {
     first: boolean;
     last: boolean;
   }
+
+  export interface StatItem {
+    name: string;
+    count: number;
+  }
+  
+  export interface DailyRevenueDashboard {
+    totalDeposited: number;
+    totalDeducted: number;
+    netCashflow: number;
+    mostActiveStaff: StatItem[];
+    mostActiveUsers: StatItem[];
+  }
+  
