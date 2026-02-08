@@ -4,27 +4,24 @@ import Login from "./components/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import OwnerDashboard from "./pages/OwnerDashboard";
 
+import PlayerProtectedRoute from "./components/PlayerProtectedRoute";
+import MyBookings from "./pages/MyBookings";
+import PlayerHome from "./pages/PlayerHome";
+import ProfilePage from "./pages/ProfilePage";
+import SlotPage from "./pages/SlotPage";
+import SportPage from "./pages/SportPage";
 import UserDetailsPage from "./pages/UserDetailsPage";
 import UsersListPage from "./pages/UsersListPage";
-import { isAdminLoggedIn } from "./utils/auth";
 
 export default function MainRouter() {
   return (
     <HashRouter>
       <Routes>
-        {/* Login Page */}
-        <Route
-          path="/login"
-          element={
-            isAdminLoggedIn() ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <Login onLogin={() => window.location.reload()} />
-            )
-          }
-        />
 
-        {/* Staff / RFID Dashboard */}
+        {/* Login */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Admin Dashboard */}
         <Route
           path="/dashboard"
           element={
@@ -34,7 +31,6 @@ export default function MainRouter() {
           }
         />
 
-        {/* Owner Dashboard */}
         <Route
           path="/owner"
           element={
@@ -44,7 +40,6 @@ export default function MainRouter() {
           }
         />
 
-        {/* All Users List Page */}
         <Route
           path="/users"
           element={
@@ -54,7 +49,6 @@ export default function MainRouter() {
           }
         />
 
-        {/* User Details Page */}
         <Route
           path="/users/:userId"
           element={
@@ -64,8 +58,54 @@ export default function MainRouter() {
           }
         />
 
-        {/* Default - Redirect to login */}
+        {/* Player Routes */}
+        <Route
+          path="/player-dashboard"
+          element={
+            <PlayerProtectedRoute>
+              <PlayerHome />
+            </PlayerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/book-slot/:sportId"
+          element={
+            <PlayerProtectedRoute>
+              <SlotPage />
+            </PlayerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-bookings"
+          element={
+            <PlayerProtectedRoute>
+              <MyBookings />
+            </PlayerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <PlayerProtectedRoute>
+              <ProfilePage />
+            </PlayerProtectedRoute>
+          }
+        />
+        <Route
+  path="/sports"
+  element={
+    <PlayerProtectedRoute>
+      <SportPage />
+    </PlayerProtectedRoute>
+  }
+/>
+
+        {/* Default */}
         <Route path="*" element={<Navigate to="/login" replace />} />
+
       </Routes>
     </HashRouter>
   );

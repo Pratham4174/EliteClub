@@ -1,26 +1,56 @@
-import { Eye, EyeOff, Gamepad2, LogIn } from "lucide-react";
+import { Eye, EyeOff, Gamepad2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/login.css";
-import { api } from "../utils/api"; // Import the API
+import { api } from "../utils/api";
 
-interface LoginProps {
-  onLogin: (isLoggedIn: boolean) => void;
-}
-
-export default function Login({ onLogin }: LoginProps) {
+export default function Login() {
   const navigate = useNavigate();
+
+  const [mode, setMode] = useState<"ADMIN" | "PLAYER">("ADMIN");
+
+  // Admin states
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
+  // Player states
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [name, setName] = useState("");
+  const [otpStep, setOtpStep] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // =========================
+  // ADMIN LOGIN
+  // =========================
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!username.trim() || !password.trim()) {
-      setError("Please enter both username and password");
+    setLoading(true);
+    setError("");
+
+    try {
+      const adminData = await api.login(username, password);
+
+      localStorage.setItem("admin", JSON.stringify(adminData));
+      localStorage.setItem("isAdminLoggedIn", "true");
+
+      navigate("/dashboard"); // ✅ no reload
+    } catch (err: any) {
+      setError(err.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================
+  // PLAYER SEND OTP
+  // =========================
+  const handleSendOtp = async () => {
+    if (!phone.trim()) {
+      setError("Enter phone number");
       return;
     }
 
@@ -28,166 +58,130 @@ export default function Login({ onLogin }: LoginProps) {
     setError("");
 
     try {
-      // Use the API function instead of direct fetch
-      const adminData = await api.login(username, password);
-      
-      // Store admin data in localStorage
-      localStorage.setItem("admin", JSON.stringify(adminData));
-      localStorage.setItem("isAdminLoggedIn", "true");
-      
-      // Call parent callback
-      onLogin(true);
-      
-      // Navigate to main app
-      navigate("/dashboard");
-      
+      await api.sendOtp(phone);
+      setOtpStep(true);
     } catch (err: any) {
-      setError(err.message || "Invalid username or password");
-      console.error("Login error:", err);
+      setError(err.message || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDemoLogin = (role: 'STAFF' | 'MANAGER' | 'OWNER') => {
-    // Demo credentials for testing
-    const demoCredentials = {
-      STAFF: { username: "staff", password: "staff123" },
-      MANAGER: { username: "manager", password: "manager123" },
-      OWNER: { username: "admin", password: "admin123" }
-    };
-    
-    setUsername(demoCredentials[role].username);
-    setPassword(demoCredentials[role].password);
-    setError(`Demo ${role.toLowerCase()} credentials loaded. Click Login to continue.`);
+  // =========================
+  // PLAYER VERIFY OTP
+  // =========================
+  const handleVerifyOtp = async () => {
+    if (!otp.trim()) {
+      setError("Enter OTP");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const user = await api.verifyOtp(phone, otp, name);
+
+      localStorage.setItem("player", JSON.stringify(user));
+      localStorage.setItem("isPlayerLoggedIn", "true");
+
+      navigate("/player-dashboard"); // ✅ no reload
+    } catch (err: any) {
+      setError(err.message || "OTP verification failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-container">
-      {/* Background Animation */}
-      <div className="login-bg-animation"></div>
-      
-      {/* Main Login Card */}
       <div className="login-card">
-        {/* Logo Header */}
         <div className="login-header">
-          <div className="login-logo">
-            <Gamepad2 size={48} />
-          </div>
-          <h1 className="login-title">🎮 PlayBox Arena</h1>
-          <p className="login-subtitle">Admin Dashboard Access</p>
+          <Gamepad2 size={48} />
+          <h1>🎮 PlayBox Arena</h1>
         </div>
 
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="login-form">
-          {error && (
-            <div className="login-error">
-              {error}
-            </div>
-          )}
+        {/* Toggle */}
+        <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+          <button onClick={() => setMode("ADMIN")}>
+            Admin Login
+          </button>
+          <button onClick={() => setMode("PLAYER")}>
+            Player Login
+          </button>
+        </div>
 
-          {/* Username Field */}
-          <div className="input-group">
-            <label className="input-label">Username</label>
-            <div className="input-wrapper">
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
-                className="login-input"
-                disabled={loading}
-              />
-            </div>
-          </div>
+        {error && <div className="login-error">{error}</div>}
 
-          {/* Password Field */}
-          <div className="input-group">
-            <label className="input-label">Password</label>
-            <div className="input-wrapper">
+        {/* ADMIN FORM */}
+        {mode === "ADMIN" && (
+          <form onSubmit={handleAdminLogin}>
+            <input
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+
+            <div style={{ position: "relative" }}>
               <input
                 type={showPassword ? "text" : "password"}
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="login-input"
-                disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="password-toggle"
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-          </div>
 
-          {/* Remember Me & Forgot Password */}
-          <div className="form-options">
-            <label className="remember-me">
-              <input type="checkbox" />
-              <span>Remember me</span>
-            </label>
-            <button type="button" className="forgot-password">
-              Forgot Password?
+            <button type="submit">
+              {loading ? "Logging in..." : "Login"}
             </button>
-          </div>
+          </form>
+        )}
 
-          {/* Login Button */}
-          <button
-            type="submit"
-            className="login-button"
-            disabled={loading}
-          >
-            {loading ? (
-              <div className="spinner"></div>
+        {/* PLAYER FORM */}
+        {mode === "PLAYER" && (
+          <div>
+            {!otpStep ? (
+              <>
+                <input
+                  type="text"
+                  placeholder="Enter Phone Number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+                <button onClick={handleSendOtp}>
+                  {loading ? "Sending..." : "Send OTP"}
+                </button>
+              </>
             ) : (
               <>
-                <LogIn size={20} />
-                Sign In
+                <input
+                  type="text"
+                  placeholder="Enter OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
+
+                <input
+                  type="text"
+                  placeholder="Enter Name (if new)"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+
+                <button onClick={handleVerifyOtp}>
+                  {loading ? "Verifying..." : "Verify & Login"}
+                </button>
               </>
             )}
-          </button>
-        </form>
-
-        {/* Demo Login Buttons */}
-        <div className="demo-section">
-          <p className="demo-label">Quick Demo Access</p>
-          <div className="demo-buttons">
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('STAFF')}
-              className="demo-btn staff"
-            >
-              Staff Login
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('MANAGER')}
-              className="demo-btn manager"
-            >
-              Manager Login
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('OWNER')}
-              className="demo-btn owner"
-            >
-              Owner Login
-            </button>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="login-footer">
-          <p className="footer-text">
-            © {new Date().getFullYear()} PlayBox Sports Arena. All rights reserved.
-          </p>
-          <p className="footer-hint">
-            Ensure you have proper authorization to access this dashboard
-          </p>
-        </div>
+        )}
       </div>
     </div>
   );

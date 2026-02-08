@@ -1,7 +1,7 @@
 import type { DailyRevenueDashboard, PlayBoxUser, ScanResponse, Transaction, User, UserDetails, UserStats } from "../types";
 
-// const BACKEND_URL = "http://localhost:8080/playbox";
-const BACKEND_URL = "https://playboxcardbackend-production.up.railway.app/playbox";
+const BACKEND_URL = "http://localhost:8080/playbox";
+// const BACKEND_URL = "https://playboxcardbackend-production.up.railway.app/playbox";
 
 export const api = {
   // ====================
@@ -31,6 +31,67 @@ export const api = {
     const adminData = localStorage.getItem("admin");
     return adminData ? JSON.parse(adminData) : null;
   },
+// ====================
+// PLAYER SLOT APIs
+// ====================
+
+getSlots: async (sportId: number, date: string) => {
+  const res = await fetch(
+    `${BACKEND_URL}/api/slots?sportId=${sportId}&date=${date}`
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch slots");
+  return await res.json();
+},
+bookSlot: async (
+  userId: number,
+  slotId: number,
+  paymentMode: string
+) => {
+  const res = await fetch(
+    `${BACKEND_URL}/api/bookings/book`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        userId,
+        slotId,
+        paymentMode
+      })
+    }
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error || "Booking failed");
+  }
+
+  return await res.json();
+},
+
+getUserBookings: async (userId: number) => {
+  const res = await fetch(
+    `${BACKEND_URL}/api/bookings/user/${userId}`
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch bookings");
+  return await res.json();
+},
+getUserProfile: async (userId: number) => {
+  const res = await fetch(
+    `${BACKEND_URL}/api/users/${userId}/details`
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch profile");
+  return await res.json();
+},
+getSports: async () => {
+  const res = await fetch(`${BACKEND_URL}/api/sports`);
+  if (!res.ok) throw new Error("Failed to fetch sports");
+  return await res.json();
+},
 
   // ====================
   // RFID SCANNER
@@ -84,6 +145,34 @@ export const api = {
     }
     return await res.json();
   },
+// ====================
+// PLAYER AUTH (OTP)
+// ====================
+sendOtp: async (phone: string): Promise<string> => {
+  const res = await fetch(`${BACKEND_URL}/api/auth/send-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone }),
+  });
+
+  if (!res.ok) throw new Error("Failed to send OTP");
+  return await res.text();
+},
+
+verifyOtp: async (phone: string, otp: string, name?: string) => {
+  const res = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone, otp, name }),
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error || "OTP verification failed");
+  }
+
+  return await res.json();
+},
 
   deductBalance: async (
     cardUid: string,
@@ -327,3 +416,5 @@ export const transactionApi = {
       }));
     },
   };
+
+  
