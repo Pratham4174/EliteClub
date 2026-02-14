@@ -93,7 +93,7 @@ export interface PageResponse<T> {
     lastRechargeDate?: string;
   }
   
-  export interface UserStats {
+export interface UserStats {
     totalUsers: number;
     activeUsers: number;
     totalRecharge: number;
@@ -101,6 +101,51 @@ export interface PageResponse<T> {
     avgBalance: number;
     newUsersToday: number;
   }
-  
+ 
+  export interface Sport {
+    id: number;
+    name: string;
+    courtName: string;
+    pricePerHour: number;
+    active: boolean;
+  }
+
+  export interface Slot {
+    id: number;
+    slotDate: string;
+    startTime: string;
+    endTime: string;
+    booked: boolean;
+  }
+
+  export interface SlotDetails extends Slot {
+    sportId: number;
+  }
+
+  export interface AdminSlotStatus {
+    slotId: number;
+    slotDate: string;
+    startTime: string;
+    endTime: string;
+    booked: boolean;
+    bookingId?: number;
+    userId?: number;
+    userName?: string;
+    amount?: number;
+    status?: string;
+    paymentMode?: string;
+    createdAt?: string;
+  }
+
+  export interface AdminSportDayOverview {
+    sportId: number;
+    sportName: string;
+    courtName: string;
+    date: string;
+    totalSlots: number;
+    bookedSlots: number;
+    emptySlots: number;
+    slots: AdminSlotStatus[];
+  }
 
   

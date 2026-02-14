@@ -77,6 +77,20 @@ export default function Login() {
       return;
     }
 
+    // Name is mandatory for first-time signup only.
+    let isExistingUser = false;
+    try {
+      await api.searchByPhone(phone);
+      isExistingUser = true;
+    } catch {
+      isExistingUser = false;
+    }
+
+    if (!isExistingUser && !name.trim()) {
+      toast.error("Name is required for new user signup");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -263,7 +277,7 @@ export default function Login() {
                 <div className="form-group">
                   <label className="form-label">
                     <Users size={16} />
-                    Your Name (Optional)
+                    Your Name
                   </label>
                   <input
                     type="text"
@@ -274,7 +288,7 @@ export default function Login() {
                     disabled={loading}
                   />
                   <p className="text-sm text-gray-400 mt-1">
-                    Required only for new users
+                    Required for new users
                   </p>
                 </div>
 

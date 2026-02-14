@@ -1,4 +1,16 @@
-import type { DailyRevenueDashboard, PlayBoxUser, ScanResponse, Transaction, User, UserDetails, UserStats } from "../types";
+import type {
+  AdminSportDayOverview,
+  DailyRevenueDashboard,
+  PlayBoxUser,
+  ScanResponse,
+  Slot,
+  SlotDetails,
+  Sport,
+  Transaction,
+  User,
+  UserDetails,
+  UserStats
+} from "../types";
 
 const BACKEND_URL = "http://localhost:8080/playbox";
 // const BACKEND_URL = "https://playboxcardbackend-production.up.railway.app/playbox";
@@ -35,12 +47,17 @@ export const api = {
 // PLAYER SLOT APIs
 // ====================
 
-getSlots: async (sportId: number, date: string) => {
+getSlots: async (sportId: number, date: string): Promise<Slot[]> => {
   const res = await fetch(
     `${BACKEND_URL}/api/slots?sportId=${sportId}&date=${date}`
   );
 
   if (!res.ok) throw new Error("Failed to fetch slots");
+  return await res.json();
+},
+getSlotById: async (slotId: number): Promise<SlotDetails> => {
+  const res = await fetch(`${BACKEND_URL}/api/slots/${slotId}`);
+  if (!res.ok) throw new Error("Failed to fetch slot details");
   return await res.json();
 },
 bookSlot: async (
@@ -87,7 +104,24 @@ getUserProfile: async (userId: number) => {
   if (!res.ok) throw new Error("Failed to fetch profile");
   return await res.json();
 },
-getSports: async () => {
+updateUserProfile: async (payload: {
+  id: number;
+  name: string;
+  email?: string;
+}): Promise<PlayBoxUser> => {
+  const res = await fetch(`${BACKEND_URL}/api/users/update`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error || "Failed to update profile");
+  }
+  return await res.json();
+},
+getSports: async (): Promise<Sport[]> => {
   const res = await fetch(`${BACKEND_URL}/api/sports`);
   if (!res.ok) throw new Error("Failed to fetch sports");
   return await res.json();
@@ -182,14 +216,64 @@ verifyOtp: async (phone: string, otp: string, name?: string) => {
     cardUid: string,
     amount: number,
     deductor: string,
-    description: string
+    description: string,
+    sportId?: number,
+    slotId?: number
   ): Promise<PlayBoxUser> => {
+    const params = new URLSearchParams({
+      cardUid,
+      amount: amount.toString(),
+      deductor,
+      description
+    });
+    if (sportId != null) params.append("sportId", sportId.toString());
+    if (slotId != null) params.append("slotId", slotId.toString());
+
     const res = await fetch(
-      `${BACKEND_URL}/api/users/deduct?cardUid=${cardUid}&amount=${amount}&deductor=${encodeURIComponent(deductor)}&description=${encodeURIComponent(description)}`,
+      `${BACKEND_URL}/api/users/deduct?${params.toString()}`,
       { method: "POST" }
     );
   
     if (!res.ok) throw new Error("Deduction failed");
+    return await res.json();
+  },
+  cancelUserCard: async (
+    cardUid: string,
+    adminUsername: string,
+    adminPassword: string
+  ): Promise<PlayBoxUser> => {
+    const res = await fetch(`${BACKEND_URL}/api/users/cancel-card`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardUid, adminUsername, adminPassword }),
+    });
+    if (!res.ok) {
+      const error = await res.text();
+      throw new Error(error || "Failed to cancel card");
+    }
+    return await res.json();
+  },
+  assignCardToUser: async (userId: number, cardUid: string): Promise<PlayBoxUser> => {
+    const res = await fetch(`${BACKEND_URL}/api/users/assign-card`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, cardUid }),
+    });
+    if (!res.ok) {
+      const error = await res.text();
+      throw new Error(error || "Failed to assign card");
+    }
+    return await res.json();
+  },
+
+  getAdminSportDayOverview: async (sportId: number, date: string): Promise<AdminSportDayOverview> => {
+    const res = await fetch(
+      `${BACKEND_URL}/api/bookings/admin/day-overview?sportId=${sportId}&date=${date}`
+    );
+    if (!res.ok) {
+      const error = await res.text();
+      throw new Error(error || "Failed to fetch day overview");
+    }
     return await res.json();
   },
   

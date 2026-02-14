@@ -16,12 +16,29 @@ import {
   UserPlus,
   Users
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./css/main.css"; // Custom CSS
 import "./index.css"; // Tailwind
-import type { PlayBoxUser, StatusType } from "./types";
+import type { AdminSportDayOverview, PlayBoxUser, Slot, Sport, StatusType } from "./types";
+import { formatSlotRange } from "./utils/formatters";
 import { api } from "./utils/api";
+
+const SLOT_REQUIRED_ACTIVITIES = new Set(["cricket", "pickleball", "swimming pool", "swimming"]);
+
+const normalizeActivity = (value: string) =>
+  value.trim().toLowerCase().replace(/\s+/g, " ");
+
+const isSportMatchForActivity = (activity: string, sportName: string) => {
+  const normalizedActivity = normalizeActivity(activity);
+  const normalizedSport = normalizeActivity(sportName);
+
+  if (normalizedActivity === "swimming pool") {
+    return normalizedSport.includes("swimming");
+  }
+
+  return normalizedSport.includes(normalizedActivity);
+};
 
 export default function App() {
   const [cardUid, setCardUid] = useState("");
@@ -41,16 +58,34 @@ export default function App() {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [isCardAssignmentMode, setIsCardAssignmentMode] = useState(false);
   const [isTxnLoading, setIsTxnLoading] = useState(false);
   const [showDeductModal, setShowDeductModal] = useState(false);
+  const [showCancelCardModal, setShowCancelCardModal] = useState(false);
+  const [cancelAdminPassword, setCancelAdminPassword] = useState("");
+  const [isCancelingCard, setIsCancelingCard] = useState(false);
   const [deductorName, setDeductorName] = useState("");
   const [description, setDescription] = useState("");
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [deductSportId, setDeductSportId] = useState<number | "">("");
+  const [slotDate, setSlotDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [selectedSlotId, setSelectedSlotId] = useState<number | "">("");
+  const [slotLoading, setSlotLoading] = useState(false);
+  const [overviewSportId, setOverviewSportId] = useState<number | "">("");
+  const [overviewDate, setOverviewDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [dayOverview, setDayOverview] = useState<AdminSportDayOverview | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [adminInfo, setAdminInfo] = useState<any>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const scannerInputRef = useRef<HTMLInputElement>(null);
+  const adminRole = String(adminInfo?.role || "").trim().toLowerCase();
+  const isOwner = adminRole.includes("owner");
 
   const navigate = useNavigate();
+  const hasAssignedCard = Boolean(activeUid && activeUid.trim().length > 0);
   useEffect(() => {
     // Focus scanner input when switching from admin view
     if (!isAdminView && scannerInputRef.current) {
@@ -93,6 +128,53 @@ export default function App() {
 
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    api.getSports()
+      .then((data) => setSports(Array.isArray(data) ? data : []))
+      .catch((error) => console.error("Failed to load sports:", error));
+  }, []);
+
+  const requiresSlotSelection = SLOT_REQUIRED_ACTIVITIES.has(normalizeActivity(description));
+  const availableSportsForActivity = useMemo(
+    () => sports.filter((sport) => isSportMatchForActivity(description, sport.name)),
+    [sports, description]
+  );
+
+  useEffect(() => {
+    if (!requiresSlotSelection) {
+      if (deductSportId !== "") setDeductSportId("");
+      if (selectedSlotId !== "") setSelectedSlotId("");
+      if (slots.length > 0) setSlots([]);
+      return;
+    }
+
+    if (availableSportsForActivity.length === 1) {
+      setDeductSportId(availableSportsForActivity[0].id);
+    } else if (
+      deductSportId !== "" &&
+      !availableSportsForActivity.some((sport) => sport.id === deductSportId)
+    ) {
+      setDeductSportId("");
+    }
+  }, [requiresSlotSelection, availableSportsForActivity, deductSportId, selectedSlotId, slots.length]);
+
+  useEffect(() => {
+    if (!showDeductModal || !requiresSlotSelection || deductSportId === "") {
+      return;
+    }
+
+    setSlotLoading(true);
+    api.getSlots(Number(deductSportId), slotDate)
+      .then((data) => {
+        setSlots(Array.isArray(data) ? data : []);
+      })
+      .catch((error) => {
+        console.error("Failed to load slots:", error);
+        setSlots([]);
+      })
+      .finally(() => setSlotLoading(false));
+  }, [showDeductModal, requiresSlotSelection, deductSportId, slotDate]);
 
   if (loading) {
     return (
@@ -150,6 +232,20 @@ export default function App() {
     setStatus({ text: "Scanning card...", type: "info" });
 
     try {
+      if (isCardAssignmentMode && selectedUserId) {
+        const updatedUser = await api.assignCardToUser(selectedUserId, uid);
+        setActiveUid(updatedUser.cardUid || uid);
+        setName(updatedUser.name || name);
+        setBalance(updatedUser.balance ?? balance ?? 0);
+        setIsNewUser(false);
+        setIsCardAssignmentMode(false);
+        setAdminUsers((prev) =>
+          prev.map((user) => (user.id === selectedUserId ? { ...user, cardUid: updatedUser.cardUid } : user))
+        );
+        setStatus({ text: `Card assigned successfully to ${updatedUser.name}`, type: "success" });
+        return;
+      }
+
       const data = await api.scanCard(uid);
       setActiveUid(uid);
 
@@ -257,6 +353,17 @@ export default function App() {
       setStatus({ text: "Deductor name & description required", type: "warning" });
       return;
     }
+
+    if (requiresSlotSelection) {
+      if (deductSportId === "") {
+        setStatus({ text: "Please select sport/court", type: "warning" });
+        return;
+      }
+      if (selectedSlotId === "") {
+        setStatus({ text: "Please select a slot", type: "warning" });
+        return;
+      }
+    }
   
     setIsTxnLoading(true);
     setStatus({ text: "Deducting amount...", type: "info" });
@@ -266,7 +373,9 @@ export default function App() {
         activeUid,
         amount,
         deductorName,
-        description
+        description,
+        deductSportId === "" ? undefined : deductSportId,
+        selectedSlotId === "" ? undefined : selectedSlotId
       );
   
       setBalance(user.balance);
@@ -279,12 +388,53 @@ export default function App() {
       setShowDeductModal(false);
       setDeductorName("");
       setDescription("");
+      setDeductSportId("");
+      setSelectedSlotId("");
+      setSlots([]);
     } catch (error: any) {
       setStatus({ text: `Error: ${error.message || "Insufficient balance"}`, type: "error" });
     } finally {
       setIsTxnLoading(false);
     }
   };
+
+  const handleCancelCard = async () => {
+    if (!activeUid) {
+      setStatus({ text: "No card assigned to cancel", type: "warning" });
+      return;
+    }
+    if (!adminInfo?.username) {
+      setStatus({ text: "Admin username not found in session", type: "error" });
+      return;
+    }
+    if (!cancelAdminPassword.trim()) {
+      setStatus({ text: "Admin password is required", type: "warning" });
+      return;
+    }
+
+    try {
+      setIsCancelingCard(true);
+      const updatedUser = await api.cancelUserCard(activeUid, adminInfo.username, cancelAdminPassword);
+
+      setShowCancelCardModal(false);
+      setCancelAdminPassword("");
+      setActiveUid("");
+      setName(updatedUser.name || name);
+      setBalance(updatedUser.balance ?? balance ?? 0);
+      setIsCardAssignmentMode(false);
+
+      setAdminUsers((prev) =>
+        prev.map((user) => (user.id === updatedUser.id ? { ...user, cardUid: "" } : user))
+      );
+
+      setStatus({ text: `Card cancelled successfully for ${updatedUser.name}`, type: "success" });
+    } catch (error: any) {
+      setStatus({ text: `Error: ${error.message || "Failed to cancel card"}`, type: "error" });
+    } finally {
+      setIsCancelingCard(false);
+    }
+  };
+
   
   // UPDATED: loadAllUsers with better error handling
   const loadAllUsers = async () => {
@@ -357,9 +507,11 @@ export default function App() {
     try {
       setLoading(true);
       const user = await api.searchByPhone(searchPhone);
+      setSelectedUserId(user.id);
       setName(user.name);
       setBalance(user.balance);
-      setActiveUid(user.cardUid);
+      setActiveUid(user.cardUid || "");
+      setIsCardAssignmentMode(false);
       setIsNewUser(false);
       setIsAdminView(false);
       setStatus({ text: "User loaded via phone search ✅", type: "success" });
@@ -370,13 +522,54 @@ export default function App() {
     }
   };
 
+  const loadDayOverview = async () => {
+    if (overviewSportId === "") {
+      setStatus({ text: "Select a sport/court for day overview", type: "warning" });
+      return;
+    }
+
+    try {
+      setOverviewLoading(true);
+      const overview = await api.getAdminSportDayOverview(Number(overviewSportId), overviewDate);
+      setDayOverview(overview);
+      setStatus({ text: "Day-wise slot overview loaded", type: "success" });
+    } catch (error: any) {
+      setStatus({ text: `Error: ${error.message || "Failed to load slot overview"}`, type: "error" });
+      setDayOverview(null);
+    } finally {
+      setOverviewLoading(false);
+    }
+  };
+
   const handleSelectUser = (user: PlayBoxUser) => {
-    setActiveUid(user.cardUid);
+    setSelectedUserId(user.id);
+    setActiveUid(user.cardUid || "");
     setName(user.name);
     setBalance(user.balance);
+    setIsCardAssignmentMode(false);
     setIsNewUser(false);
     setIsAdminView(false);
-    setStatus({ text: "User loaded from Admin Panel ✅", type: "success" });
+    setStatus({
+      text: user.cardUid ? "User loaded from Admin Panel ✅" : "User has no card. Click Create Card and scan RFID.",
+      type: user.cardUid ? "success" : "warning",
+    });
+  };
+
+  const startCardAssignment = () => {
+    if (!selectedUserId) {
+      setStatus({ text: "Please select a user first", type: "warning" });
+      return;
+    }
+    setIsCardAssignmentMode(true);
+    setStatus({ text: "Card assignment mode ON: scan RFID card to assign it.", type: "info" });
+  };
+
+  const goToOwnerDashboard = () => {
+    navigate("/owner");
+    // Fallback for HashRouter edge cases
+    if (window.location.hash !== "#/owner") {
+      window.location.hash = "/owner";
+    }
   };
 
   const getStatusColor = () => {
@@ -432,9 +625,10 @@ export default function App() {
             <Settings size={16} className="btn-icon" />
             {isAdminView ? "Back to RFID" : "Find Users"}
           </button>
-          {adminInfo?.role === "Owner" && (
+          {isOwner && (
   <button
-    onClick={() => navigate("/owner")}
+    type="button"
+    onClick={goToOwnerDashboard}
     className="btn btn-outline"
     style={{
       border: "1px solid rgba(255,255,255,0.3)",
@@ -665,6 +859,70 @@ export default function App() {
                   </button>
                 </div>
               )}
+
+              <div className="card" style={{ marginTop: 16 }}>
+                <div style={{ padding: 16 }}>
+                  <h3 className="section-title" style={{ marginBottom: 12 }}>Day-wise Slot Status</h3>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <select
+                      value={overviewSportId}
+                      onChange={(e) => setOverviewSportId(e.target.value ? Number(e.target.value) : "")}
+                      className="input-field"
+                      style={{ minWidth: 220 }}
+                    >
+                      <option value="">Select Sport/Court</option>
+                      {sports.map((sport) => (
+                        <option key={sport.id} value={sport.id}>
+                          {sport.name} - {sport.courtName}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="date"
+                      value={overviewDate}
+                      onChange={(e) => setOverviewDate(e.target.value)}
+                      className="input-field"
+                    />
+                    <button
+                      onClick={loadDayOverview}
+                      disabled={overviewLoading}
+                      className="btn btn-primary"
+                    >
+                      {overviewLoading ? "Loading..." : "Load Overview"}
+                    </button>
+                  </div>
+
+                  {dayOverview && (
+                    <div style={{ marginTop: 12 }}>
+                      <p style={{ marginBottom: 8, color: "#374151", fontWeight: 500 }}>
+                        {dayOverview.sportName} - {dayOverview.courtName} ({dayOverview.date}) | Total: {dayOverview.totalSlots} | Booked: {dayOverview.bookedSlots} | Empty: {dayOverview.emptySlots}
+                      </p>
+                      <div className="table-container">
+                        <table className="table">
+                          <thead>
+                            <tr className="table-header">
+                              <th className="table-header-cell">Time</th>
+                              <th className="table-header-cell">Status</th>
+                              <th className="table-header-cell">User</th>
+                              <th className="table-header-cell">Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dayOverview.slots.map((slot) => (
+                              <tr key={slot.slotId} className="table-row">
+                                <td className="table-cell">{formatSlotRange(slot.startTime, slot.endTime)}</td>
+                                <td className="table-cell">{slot.booked ? "BOOKED" : "EMPTY"}</td>
+                                <td className="table-cell">{slot.userName || "-"}</td>
+                                <td className="table-cell">{slot.amount ? `₹${slot.amount}` : "-"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           ) : (
             /* Main Content Area */
@@ -682,80 +940,124 @@ export default function App() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                             <h2 className="user-name">{name}</h2>
                             <span className="badge rfid-badge">
-                              {activeUid}
+                              {hasAssignedCard ? activeUid : "No Card Assigned"}
                             </span>
                           </div>
                           <div style={{ marginTop: 8 }}>
                             <span className="balance-label">Current Balance</span>
                             <div className="balance-amount">₹{balance?.toLocaleString()}</div>
                           </div>
+                          {hasAssignedCard && (
+                            <div style={{ marginTop: 12 }}>
+                              <button
+                                onClick={() => {
+                                  setShowCancelCardModal(true);
+                                  setCancelAdminPassword("");
+                                }}
+                                className="btn btn-destructive"
+                                style={{ height: 40 }}
+                              >
+                                Cancel Card
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Transaction Card */}
-                  <div className="card">
-                    <div style={{ padding: 24 }}>
-                      <h3 className="section-title" style={{ marginBottom: 16 }}>Transaction</h3>
-                      
-                      <div style={{ marginBottom: 16 }}>
-                        <label className="label">Amount</label>
-                        <div style={{ position: 'relative' }}>
-                          <span className="currency-symbol">₹</span>
-                          <input
-                            type="number"
-                            min={1}
-                            value={amount}
-                            onChange={(e) => setAmount(Number(e.target.value))}
-                            className="input-field"
-                            style={{ paddingLeft: 40, fontSize: '1.25rem', textAlign: 'right' }}
-                            placeholder="Enter amount"
-                          />
+                  {!hasAssignedCard ? (
+                    <div className="card">
+                      <div style={{ padding: 24 }}>
+                        <h3 className="section-title" style={{ marginBottom: 16 }}>Create Card</h3>
+                        <p className="hint" style={{ marginBottom: 12 }}>
+                          This user has no RFID card assigned. Click Create Card, then scan card in RFID Scanner.
+                        </p>
+                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                          <button
+                            onClick={startCardAssignment}
+                            className="btn btn-primary"
+                            style={{ height: 44 }}
+                          >
+                            Create Card
+                          </button>
+                          {isCardAssignmentMode && (
+                            <span style={{ color: "#1d4ed8", fontWeight: 600, fontSize: 14 }}>
+                              Waiting for RFID scan...
+                            </span>
+                          )}
                         </div>
-                        <p className="hint">Minimum ₹500 for deposit</p>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: 12 }}>
-                        <button
-                          onClick={handleAddBalance}
-                          disabled={isTxnLoading || amount < 500}
-                          className="btn btn-primary"
-                          style={{ flex: 1, height: 48 }}
-                        >
-                          {isTxnLoading ? (
-                            <>
-                              <Loader2 size={16} className="spinner btn-icon" />
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <Plus size={16} className="btn-icon" />
-                              Add Balance
-                            </>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => setShowDeductModal(true)}
-                          disabled={isTxnLoading || amount <= 0}
-                          className="btn btn-destructive"
-                          style={{ flex: 1, height: 48 }}
-                        >
-                          {isTxnLoading ? (
-                            <>
-                              <Loader2 size={16} className="spinner btn-icon" />
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <Minus size={16} className="btn-icon" />
-                              Deduct Balance
-                            </>
-                          )}
-                        </button>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="card">
+                      <div style={{ padding: 24 }}>
+                        <h3 className="section-title" style={{ marginBottom: 16 }}>Transaction</h3>
+                        
+                        <div style={{ marginBottom: 16 }}>
+                          <label className="label">Amount</label>
+                          <div style={{ position: 'relative' }}>
+                            <span className="currency-symbol">₹</span>
+                            <input
+                              type="number"
+                              min={1}
+                              value={amount}
+                              onChange={(e) => setAmount(Number(e.target.value))}
+                              className="input-field"
+                              style={{ paddingLeft: 40, fontSize: '1.25rem', textAlign: 'right' }}
+                              placeholder="Enter amount"
+                            />
+                          </div>
+                          <p className="hint">Minimum ₹500 for deposit</p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 12 }}>
+                          <button
+                            onClick={handleAddBalance}
+                            disabled={isTxnLoading || amount < 500}
+                            className="btn btn-primary"
+                            style={{ flex: 1, height: 48 }}
+                          >
+                            {isTxnLoading ? (
+                              <>
+                                <Loader2 size={16} className="spinner btn-icon" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <Plus size={16} className="btn-icon" />
+                                Add Balance
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowDeductModal(true);
+                              setDescription("");
+                              setDeductSportId("");
+                              setSelectedSlotId("");
+                              setSlots([]);
+                            }}
+                            disabled={isTxnLoading || amount <= 0}
+                            className="btn btn-destructive"
+                            style={{ flex: 1, height: 48 }}
+                          >
+                            {isTxnLoading ? (
+                              <>
+                                <Loader2 size={16} className="spinner btn-icon" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <Minus size={16} className="btn-icon" />
+                                Deduct Balance
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : isNewUser ? (
                 <div className="card">
@@ -864,7 +1166,12 @@ export default function App() {
                 <label className="label">Select Activity *</label>
                 <select
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    setDeductSportId("");
+                    setSelectedSlotId("");
+                    setSlots([]);
+                  }}
                   className="input-field"
                   style={{ width: '100%', padding: '10px 12px' }}
                   required
@@ -877,6 +1184,68 @@ export default function App() {
                   <option value="Pickleball">Pickleball</option>
                 </select>
               </div>
+
+              {requiresSlotSelection && (
+                <>
+                  <div className="form-group">
+                    <label className="label">Select Sport/Court *</label>
+                    <select
+                      value={deductSportId}
+                      onChange={(e) => {
+                        setDeductSportId(e.target.value ? Number(e.target.value) : "");
+                        setSelectedSlotId("");
+                      }}
+                      className="input-field"
+                      style={{ width: "100%", padding: "10px 12px" }}
+                      required
+                    >
+                      <option value="">Select Sport/Court</option>
+                      {availableSportsForActivity.map((sport) => (
+                        <option key={sport.id} value={sport.id}>
+                          {sport.name} - {sport.courtName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="label">Select Date *</label>
+                    <input
+                      type="date"
+                      value={slotDate}
+                      onChange={(e) => {
+                        setSlotDate(e.target.value);
+                        setSelectedSlotId("");
+                      }}
+                      className="input-field"
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="label">Select Slot *</label>
+                    <select
+                      value={selectedSlotId}
+                      onChange={(e) => setSelectedSlotId(e.target.value ? Number(e.target.value) : "")}
+                      className="input-field"
+                      style={{ width: "100%", padding: "10px 12px" }}
+                      disabled={slotLoading || deductSportId === ""}
+                      required
+                    >
+                      <option value="">
+                        {slotLoading ? "Loading slots..." : "Select Available Slot"}
+                      </option>
+                      {slots
+                        .filter((slot) => !slot.booked)
+                        .map((slot) => (
+                          <option key={slot.id} value={slot.id}>
+                            {formatSlotRange(slot.startTime, slot.endTime)}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </>
+              )}
 
               {/* Deductor Name - READONLY */}
               <div className="form-group">
@@ -910,7 +1279,11 @@ export default function App() {
                 <button
                   onClick={handleDeductBalance}
                   className="btn btn-destructive"
-                  disabled={isTxnLoading || !description.trim()}
+                  disabled={
+                    isTxnLoading ||
+                    !description.trim() ||
+                    (requiresSlotSelection && (deductSportId === "" || selectedSlotId === ""))
+                  }
                   style={{ flex: 1, padding: '12px' }}
                 >
                   {isTxnLoading ? (
@@ -926,6 +1299,77 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {showCancelCardModal && (
+          <div className="modal-overlay" onClick={() => setShowCancelCardModal(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div style={{ position: "relative" }}>
+                <h2 className="modal-title">Cancel Card</h2>
+                <button
+                  onClick={() => setShowCancelCardModal(false)}
+                  className="modal-close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: 10,
+                  borderRadius: 8,
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  color: "#991b1b",
+                  fontSize: 13,
+                }}
+              >
+                This will unassign card <strong>{activeUid}</strong> from this user.
+              </div>
+
+              <div className="form-group">
+                <label className="label">Admin Username</label>
+                <input
+                  value={adminInfo?.username || ""}
+                  disabled
+                  className="input-field"
+                  style={{ width: "100%", background: "#f1f5f9" }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="label">Enter Admin Password *</label>
+                <input
+                  type="password"
+                  value={cancelAdminPassword}
+                  onChange={(e) => setCancelAdminPassword(e.target.value)}
+                  className="input-field"
+                  style={{ width: "100%" }}
+                  placeholder="Enter password to confirm"
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  onClick={() => setShowCancelCardModal(false)}
+                  className="btn btn-outline"
+                  style={{ flex: 1, padding: "12px" }}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleCancelCard}
+                  className="btn btn-destructive"
+                  disabled={isCancelingCard || !cancelAdminPassword.trim()}
+                  style={{ flex: 1, padding: "12px" }}
+                >
+                  {isCancelingCard ? "Processing..." : "Confirm Cancel Card"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
 
       {/* Footer */}
