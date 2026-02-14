@@ -1,78 +1,79 @@
-import { Eye, EyeOff, Gamepad2 } from "lucide-react";
+import { Eye, EyeOff, Gamepad2, Loader2, Shield, Smartphone, UserCog, Users } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import "../css/login.css";
 import { api } from "../utils/api";
 
 export default function Login() {
   const navigate = useNavigate();
-
   const [mode, setMode] = useState<"ADMIN" | "PLAYER">("ADMIN");
-
-  // Admin states
+  
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-
-  // Player states
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [name, setName] = useState("");
   const [otpStep, setOtpStep] = useState(false);
-
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // =========================
-  // ADMIN LOGIN
-  // =========================
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username || !password) {
+      toast.error("Please enter both username and password");
+      return;
+    }
+    
     setLoading(true);
     setError("");
-
+    
     try {
       const adminData = await api.login(username, password);
-
       localStorage.setItem("admin", JSON.stringify(adminData));
       localStorage.setItem("isAdminLoggedIn", "true");
-
-      navigate("/dashboard"); // ✅ no reload
+      toast.success("Admin login successful!");
+      navigate("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      const errorMsg = err.message || "Invalid credentials";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================
-  // PLAYER SEND OTP
-  // =========================
   const handleSendOtp = async () => {
-    if (!phone.trim()) {
-      setError("Enter phone number");
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phone.trim() || !phoneRegex.test(phone)) {
+      toast.error("Please enter a valid 10-digit phone number");
       return;
     }
 
     setLoading(true);
     setError("");
-
+    
     try {
+      const loadingToast = toast.loading("Sending OTP...");
       await api.sendOtp(phone);
+      toast.success("OTP sent successfully!", {
+        id: loadingToast,
+        description: `OTP has been sent to ${phone}`,
+        duration: 3000,
+      });
       setOtpStep(true);
     } catch (err: any) {
       setError(err.message || "Failed to send OTP");
+      toast.error(err.message || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================
-  // PLAYER VERIFY OTP
-  // =========================
   const handleVerifyOtp = async () => {
-    if (!otp.trim()) {
-      setError("Enter OTP");
+    if (!otp.trim() || otp.length !== 4) {
+      toast.error("Please enter a valid 6-digit OTP");
       return;
     }
 
@@ -81,13 +82,13 @@ export default function Login() {
 
     try {
       const user = await api.verifyOtp(phone, otp, name);
-
       localStorage.setItem("player", JSON.stringify(user));
       localStorage.setItem("isPlayerLoggedIn", "true");
-
-      navigate("/player-dashboard"); // ✅ no reload
+      toast.success("Login successful!");
+      navigate("/player-dashboard");
     } catch (err: any) {
       setError(err.message || "OTP verification failed");
+      toast.error(err.message || "OTP verification failed");
     } finally {
       setLoading(false);
     }
@@ -96,92 +97,251 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
+        {/* Header */}
         <div className="login-header">
-          <Gamepad2 size={48} />
-          <h1>🎮 PlayBox Arena</h1>
+          <div className="flex items-center justify-center gap-3">
+            <Gamepad2 size={48} />
+            <Shield size={24} className="text-blue-300" />
+            <Smartphone size={24} className="text-purple-300" />
+          </div>
+          <h1> Elite Club</h1>
+          <p className="text-gray-300 mt-2">Book your favorite sports venues</p>
         </div>
 
         {/* Toggle */}
-        <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-          <button onClick={() => setMode("ADMIN")}>
+        <div className="login-toggle">
+          <button 
+            className={`toggle-btn ${mode === "ADMIN" ? "active" : ""}`}
+            onClick={() => setMode("ADMIN")}
+          >
+            <UserCog size={18} />
             Admin Login
           </button>
-          <button onClick={() => setMode("PLAYER")}>
+          <button 
+            className={`toggle-btn ${mode === "PLAYER" ? "active" : ""}`}
+            onClick={() => setMode("PLAYER")}
+          >
+            <Users size={18} />
             Player Login
           </button>
         </div>
 
-        {error && <div className="login-error">{error}</div>}
+        {/* Error Message */}
+        {error && (
+          <div className="login-error">
+            <div className="flex items-center gap-2">
+              <Shield size={16} />
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
 
         {/* ADMIN FORM */}
         {mode === "ADMIN" && (
-          <form onSubmit={handleAdminLogin}>
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-
-            <div style={{ position: "relative" }}>
+          <form onSubmit={handleAdminLogin} className="login-form">
+            <div className="form-group">
+              <label className="form-label">
+                <UserCog size={16} />
+                Username
+              </label>
               <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                type="text"
+                className="form-input"
+                placeholder="Enter admin username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
             </div>
 
-            <button type="submit">
-              {loading ? "Logging in..." : "Login"}
+            <div className="form-group">
+              <label className="form-label">
+                <Shield size={16} />
+                Password
+              </label>
+              <div className="password-input">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="form-input"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  style={{ width: "100%" }}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              className="login-btn"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={20} className="loading-spinner mr-2" />
+                  Logging in...
+                </>
+              ) : (
+                "Login as Admin"
+              )}
             </button>
           </form>
         )}
 
         {/* PLAYER FORM */}
         {mode === "PLAYER" && (
-          <div>
+          <div className="login-form">
             {!otpStep ? (
               <>
-                <input
-                  type="text"
-                  placeholder="Enter Phone Number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-                <button onClick={handleSendOtp}>
-                  {loading ? "Sending..." : "Send OTP"}
+                <div className="form-group">
+                  <label className="form-label">
+                    <Smartphone size={16} />
+                    Phone Number
+                  </label>
+                  <div className="phone-input-group">
+                    <div className="country-code">
+                      +91
+                    </div>
+                    <input
+                      type="tel"
+                      className="form-input"
+                      placeholder="9876543210"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      disabled={loading}
+                    />
+                  </div>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Enter your 10-digit mobile number
+                  </p>
+                </div>
+
+                <button 
+                  onClick={handleSendOtp}
+                  className="login-btn"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={20} className="loading-spinner mr-2" />
+                      Sending OTP...
+                    </>
+                  ) : (
+                    "Send OTP"
+                  )}
                 </button>
               </>
             ) : (
               <>
-                <input
-                  type="text"
-                  placeholder="Enter OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                />
+                <div className="form-group">
+                  <label className="form-label">
+                    <Shield size={16} />
+                    Enter OTP
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input otp-input"
+                    placeholder="123456"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    disabled={loading}
+                  />
+                  <p className="text-sm text-gray-400 mt-1 text-center">
+                    OTP sent to +91 {phone} (Valid for 5 minutes)
+                  </p>
+                </div>
 
-                <input
-                  type="text"
-                  placeholder="Enter Name (if new)"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
+                <div className="form-group">
+                  <label className="form-label">
+                    <Users size={16} />
+                    Your Name (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={loading}
+                  />
+                  <p className="text-sm text-gray-400 mt-1">
+                    Required only for new users
+                  </p>
+                </div>
 
-                <button onClick={handleVerifyOtp}>
-                  {loading ? "Verifying..." : "Verify & Login"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setOtpStep(false)}
+                    className="login-btn"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.1)",
+                      color: "rgba(255, 255, 255, 0.8)"
+                    }}
+                    disabled={loading}
+                  >
+                    Back
+                  </button>
+                  <button 
+                    onClick={handleVerifyOtp}
+                    className="login-btn"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 size={20} className="loading-spinner mr-2" />
+                        Verifying...
+                      </>
+                    ) : (
+                      "Verify & Login"
+                    )}
+                  </button>
+                </div>
               </>
             )}
           </div>
         )}
+
+        {/* Demo Credentials */}
+        <div className="demo-section">
+          <div className="demo-title">Demo Credentials</div>
+          <div className="demo-grid">
+            <div className="demo-card">
+              <div className="demo-role">Admin</div>
+              <div className="demo-info">
+                <div>Username: admin</div>
+                <div>Password: admin123</div>
+              </div>
+            </div>
+            <div className="demo-card">
+              <div className="demo-role">Player</div>
+              <div className="demo-info">
+                <div>Phone: 9876543210</div>
+                <div>OTP: 123456</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="login-footer">
+          <div className="footer-links">
+            By continuing, you agree to our{" "}
+            <a href="#">Terms of Service</a> and{" "}
+            <a href="#">Privacy Policy</a>
+          </div>
+          <div className="support-link">
+            Need help? <a href="#">Contact Support</a>
+          </div>
+        </div>
       </div>
     </div>
   );

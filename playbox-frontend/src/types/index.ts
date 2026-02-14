@@ -11,6 +11,7 @@ export interface ScanResponse {
     email?: string;
     cardUid: string;
     balance: number;
+    [key: string]: any;
   }
   
   export interface StatusType {

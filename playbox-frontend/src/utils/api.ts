@@ -155,7 +155,11 @@ sendOtp: async (phone: string): Promise<string> => {
     body: JSON.stringify({ phone }),
   });
 
-  if (!res.ok) throw new Error("Failed to send OTP");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Failed to send OTP" }));
+    throw new Error(errorData.message || "Failed to send OTP");
+  }
+  
   return await res.text();
 },
 
