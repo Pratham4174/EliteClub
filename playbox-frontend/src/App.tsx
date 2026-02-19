@@ -222,7 +222,7 @@ export default function App() {
       setApiError(null);
       
       // Redirect to login page
-      navigate("/login", { replace: true });
+      navigate("/admin/login", { replace: true });
     }
   };
 

@@ -9,11 +9,11 @@ export const isAdminLoggedIn = () => {
     return admin ? JSON.parse(admin) : null;
   };
   
-  export const logout = (): void => {
+export const logout = (): void => {
     localStorage.removeItem("isAdminLoggedIn");
     localStorage.removeItem("admin");
     // Optional: Clear all localStorage for the app
     // localStorage.clear();
     // Redirect to login page
-    window.location.href = "/login";
+    window.location.href = "/admin/login";
   };

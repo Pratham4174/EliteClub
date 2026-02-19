@@ -13,7 +13,7 @@ export default function ProtectedRoute({
   }
 
   if (!isAdminLoggedIn()) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return children;

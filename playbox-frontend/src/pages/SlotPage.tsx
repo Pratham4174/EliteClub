@@ -1,5 +1,6 @@
 import { api } from "@/utils/api";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import type { PlayBoxUser } from "../types";
 import { getPlayer } from "../utils/playerAuth";
@@ -23,12 +24,16 @@ function formatSelectedDate(value: string): string {
 
 export default function SlotPage() {
   const { sportId } = useParams();
+  const navigate = useNavigate();
   const [slots, setSlots] = useState<Slot[]>([]);
   const [sportName, setSportName] = useState<string>("Sport");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [playerData, setPlayerData] = useState<PlayBoxUser | null>(null);
   const [bookingSlotId, setBookingSlotId] = useState<number | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [confirmSlot, setConfirmSlot] = useState<Slot | null>(null);
+  const [successPopup, setSuccessPopup] = useState<{ slotRange: string } | null>(null);
+  const [errorPopup, setErrorPopup] = useState<string | null>(null);
   const player = getPlayer();
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,40 +69,40 @@ export default function SlotPage() {
 
   const bookSlot = async (slotId: number) => {
     if (!player?.id) {
-      alert("Please login again to continue booking.");
+      setErrorPopup("Please login again to continue booking.");
       return;
     }
 
-    const selectedSlot = visibleSlots.find((slot) => slot.id === slotId);
-    const slotRange = selectedSlot ? formatSlotRange(selectedSlot.startTime, selectedSlot.endTime) : "N/A";
-    const confirmed = window.confirm(
-      `Please confirm booking:\nSport: ${sportName}\nDate: ${date}\nSlot: ${slotRange}\nPayment: Elite Card Wallet`
-    );
-
-    if (!confirmed) {
+    const selectedSlot = visibleSlots.find((slot) => slot.id === slotId) || null;
+    if (!selectedSlot) {
+      setErrorPopup("Selected slot not found.");
       return;
     }
+    setConfirmSlot(selectedSlot);
+  };
 
+  const confirmBooking = async () => {
+    if (!confirmSlot || !player?.id) return;
+    const slotRange = formatSlotRange(confirmSlot.startTime, confirmSlot.endTime);
     try {
-      setBookingSlotId(slotId);
+      setBookingSlotId(confirmSlot.id);
       await api.bookSlot(
         player.id,
-        slotId,
+        confirmSlot.id,
         "WALLET"
       );
-  
-      alert("Slot booked successfully!");
-  
+
       // Refresh slots after booking
       const updatedSlots = await api.getSlots(
         Number(sportId),
         date
       );
-  
+
       setSlots(updatedSlots);
-  
+      setConfirmSlot(null);
+      setSuccessPopup({ slotRange });
     } catch (error: any) {
-      alert(error.message);
+      setErrorPopup(error.message || "Booking failed.");
     } finally {
       setBookingSlotId(null);
     }
@@ -118,6 +123,22 @@ export default function SlotPage() {
       }}
     >
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
+      <button
+        type="button"
+        onClick={() => navigate("/player-dashboard")}
+        style={{
+          border: "1px solid #cbd5e1",
+          background: "#ffffff",
+          color: "#0f172a",
+          borderRadius: 8,
+          padding: "8px 12px",
+          fontWeight: 700,
+          cursor: "pointer",
+          marginBottom: 12,
+        }}
+      >
+        Back
+      </button>
       <h2 style={{ marginTop: 0, marginBottom: 6, color: "#0f172a" }}>
         Select Slot for {sportName}
       </h2>
@@ -258,6 +279,178 @@ export default function SlotPage() {
                 borderRadius: 10,
                 padding: "9px 10px",
                 fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {confirmSlot && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.45)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 1100,
+            padding: 16,
+          }}
+          onClick={() => setConfirmSlot(null)}
+        >
+          <div
+            style={{
+              width: "min(420px, 100%)",
+              background: "#ffffff",
+              border: "1px solid #dbeafe",
+              borderRadius: 14,
+              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.24)",
+              padding: 16,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: 0, color: "#0f172a" }}>Confirm Booking</h3>
+            <p style={{ marginTop: 8, marginBottom: 12, color: "#475569", fontSize: 14 }}>
+              Please review booking details before confirmation.
+            </p>
+            <div style={{ display: "grid", gap: 7, marginBottom: 14 }}>
+              <div style={{ color: "#334155", fontSize: 14 }}><strong>Sport:</strong> {sportName}</div>
+              <div style={{ color: "#334155", fontSize: 14 }}><strong>Date:</strong> {formatSelectedDate(date)}</div>
+              <div style={{ color: "#334155", fontSize: 14 }}>
+                <strong>Slot:</strong> {formatSlotRange(confirmSlot.startTime, confirmSlot.endTime)}
+              </div>
+              <div style={{ color: "#334155", fontSize: 14 }}><strong>Payment:</strong> Elite Card Wallet</div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setConfirmSlot(null)}
+                style={{
+                  flex: 1,
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#0f172a",
+                  borderRadius: 10,
+                  padding: "10px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmBooking}
+                disabled={bookingSlotId === confirmSlot.id}
+                style={{
+                  flex: 1,
+                  border: "none",
+                  background: "#16a34a",
+                  color: "#ffffff",
+                  borderRadius: 10,
+                  padding: "10px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {bookingSlotId === confirmSlot.id ? "Booking..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {successPopup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.42)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 1100,
+            padding: 16,
+          }}
+          onClick={() => setSuccessPopup(null)}
+        >
+          <div
+            style={{
+              width: "min(420px, 100%)",
+              background: "#ffffff",
+              border: "1px solid #86efac",
+              borderRadius: 14,
+              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.22)",
+              padding: 16,
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 40, lineHeight: 1, marginBottom: 8 }}>🎉</div>
+            <h3 style={{ margin: 0, color: "#166534" }}>Congratulations!</h3>
+            <p style={{ marginTop: 8, marginBottom: 4, color: "#334155" }}>
+              Your booking is confirmed successfully.
+            </p>
+            <p style={{ marginTop: 0, marginBottom: 14, color: "#64748b", fontSize: 14 }}>
+              {sportName} | {formatSelectedDate(date)} | {successPopup.slotRange}
+            </p>
+            <button
+              type="button"
+              onClick={() => setSuccessPopup(null)}
+              style={{
+                border: "none",
+                background: "#16a34a",
+                color: "#fff",
+                borderRadius: 10,
+                padding: "10px 16px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Great
+            </button>
+          </div>
+        </div>
+      )}
+
+      {errorPopup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.42)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 1100,
+            padding: 16,
+          }}
+          onClick={() => setErrorPopup(null)}
+        >
+          <div
+            style={{
+              width: "min(420px, 100%)",
+              background: "#ffffff",
+              border: "1px solid #fecaca",
+              borderRadius: 14,
+              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.22)",
+              padding: 16,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: 0, color: "#991b1b" }}>Booking Failed</h3>
+            <p style={{ marginTop: 8, marginBottom: 14, color: "#334155" }}>{errorPopup}</p>
+            <button
+              type="button"
+              onClick={() => setErrorPopup(null)}
+              style={{
+                border: "none",
+                background: "#b91c1c",
+                color: "#fff",
+                borderRadius: 10,
+                padding: "10px 16px",
+                fontWeight: 700,
                 cursor: "pointer",
               }}
             >

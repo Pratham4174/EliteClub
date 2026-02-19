@@ -5,9 +5,19 @@ import { toast } from "sonner";
 import "../css/login.css";
 import { api } from "../utils/api";
 
-export default function Login() {
+type LoginMode = "ADMIN" | "PLAYER";
+
+interface LoginProps {
+  adminEnabled?: boolean;
+  defaultMode?: LoginMode;
+}
+
+export default function Login({
+  adminEnabled = true,
+  defaultMode = "ADMIN",
+}: LoginProps) {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"ADMIN" | "PLAYER">("ADMIN");
+  const [mode, setMode] = useState<LoginMode>(defaultMode);
   
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -15,6 +25,7 @@ export default function Login() {
   const [otp, setOtp] = useState("");
   const [name, setName] = useState("");
   const [otpStep, setOtpStep] = useState(false);
+  const [isExistingUser, setIsExistingUser] = useState<boolean | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -58,6 +69,14 @@ export default function Login() {
     setError("");
     
     try {
+      // Check first to decide whether name field is needed
+      try {
+        await api.searchByPhone(phone);
+        setIsExistingUser(true);
+      } catch {
+        setIsExistingUser(false);
+      }
+
       const loadingToast = toast.loading("Sending OTP...");
       await api.sendOtp(phone);
       toast.success("OTP sent successfully!", {
@@ -80,16 +99,8 @@ export default function Login() {
       return;
     }
 
-    // Name is mandatory for first-time signup only.
-    let isExistingUser = false;
-    try {
-      await api.searchByPhone(phone);
-      isExistingUser = true;
-    } catch {
-      isExistingUser = false;
-    }
-
-    if (!isExistingUser && !name.trim()) {
+    const existingUser = isExistingUser === true;
+    if (!existingUser && !name.trim()) {
       toast.error("Name is required for new user signup");
       return;
     }
@@ -129,22 +140,24 @@ export default function Login() {
         </div>
 
         {/* Toggle */}
-        <div className="login-toggle">
-          <button 
-            className={`toggle-btn ${mode === "ADMIN" ? "active" : ""}`}
-            onClick={() => setMode("ADMIN")}
-          >
-            <UserCog size={18} />
-            Admin Login
-          </button>
-          <button 
-            className={`toggle-btn ${mode === "PLAYER" ? "active" : ""}`}
-            onClick={() => setMode("PLAYER")}
-          >
-            <Users size={18} />
-            Player Login
-          </button>
-        </div>
+        {adminEnabled && (
+          <div className="login-toggle">
+            <button 
+              className={`toggle-btn ${mode === "ADMIN" ? "active" : ""}`}
+              onClick={() => setMode("ADMIN")}
+            >
+              <UserCog size={18} />
+              Admin Login
+            </button>
+            <button 
+              className={`toggle-btn ${mode === "PLAYER" ? "active" : ""}`}
+              onClick={() => setMode("PLAYER")}
+            >
+              <Users size={18} />
+              Player Login
+            </button>
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -157,7 +170,7 @@ export default function Login() {
         )}
 
         {/* ADMIN FORM */}
-        {mode === "ADMIN" && (
+        {adminEnabled && mode === "ADMIN" && (
           <form onSubmit={handleAdminLogin} className="login-form">
             <div className="form-group">
               <label className="form-label">
@@ -218,7 +231,7 @@ export default function Login() {
         )}
 
         {/* PLAYER FORM */}
-        {mode === "PLAYER" && (
+        {(mode === "PLAYER" || !adminEnabled) && (
           <div className="login-form">
             {!otpStep ? (
               <>
@@ -280,27 +293,32 @@ export default function Login() {
                   </p>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">
-                    <Users size={16} />
-                    Your Name
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={loading}
-                  />
-                  <p className="text-sm text-gray-400 mt-1">
-                    Required for new users
-                  </p>
-                </div>
+                {isExistingUser === false && (
+                  <div className="form-group">
+                    <label className="form-label">
+                      <Users size={16} />
+                      Your Name
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="John Doe"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={loading}
+                    />
+                    <p className="text-sm text-gray-400 mt-1">
+                      Required for new users
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setOtpStep(false)}
+                    onClick={() => {
+                      setOtpStep(false);
+                      setIsExistingUser(null);
+                    }}
                     className="login-btn"
                     style={{
                       background: "rgba(255, 255, 255, 0.1)",
@@ -334,13 +352,15 @@ export default function Login() {
         <div className="demo-section">
           <div className="demo-title">Demo Credentials</div>
           <div className="demo-grid">
-            <div className="demo-card">
-              <div className="demo-role">Admin</div>
-              <div className="demo-info">
-                <div>Username: admin</div>
-                <div>Password: admin123</div>
+            {adminEnabled && (
+              <div className="demo-card">
+                <div className="demo-role">Admin</div>
+                <div className="demo-info">
+                  <div>Username: admin</div>
+                  <div>Password: admin123</div>
+                </div>
               </div>
-            </div>
+            )}
             <div className="demo-card">
               <div className="demo-role">Player</div>
               <div className="demo-info">

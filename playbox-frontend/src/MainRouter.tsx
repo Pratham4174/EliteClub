@@ -19,7 +19,8 @@ export default function MainRouter() {
       <Routes>
 
         {/* Login */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<Login adminEnabled={false} defaultMode="PLAYER" />} />
+        <Route path="/admin/login" element={<Login adminEnabled={true} defaultMode="ADMIN" />} />
 
         {/* Admin Dashboard */}
         <Route
