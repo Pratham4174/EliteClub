@@ -16,6 +16,33 @@ interface Booking {
   createdAt: string;
 }
 
+function parseTimeTo24HourParts(time: string): { hour: number; minute: number } | null {
+  const raw = String(time || "").trim();
+  if (!raw) return null;
+
+  // Supports: "17:00", "17:00:00", "05:00 PM", "5:00 pm"
+  const match = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?$/);
+  if (!match) return null;
+
+  let hour = Number.parseInt(match[1], 10);
+  const minute = Number.parseInt(match[2], 10);
+  const meridiem = match[3]?.toUpperCase();
+
+  if (Number.isNaN(hour) || Number.isNaN(minute) || minute < 0 || minute > 59) {
+    return null;
+  }
+
+  if (meridiem) {
+    if (hour < 1 || hour > 12) return null;
+    if (meridiem === "AM" && hour === 12) hour = 0;
+    if (meridiem === "PM" && hour !== 12) hour += 12;
+  } else if (hour < 0 || hour > 23) {
+    return null;
+  }
+
+  return { hour, minute };
+}
+
 export default function MyBookings() {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -88,16 +115,18 @@ export default function MyBookings() {
     const slot = slotById[booking.slotId];
     if (!slot?.slotDate || !slot?.endTime) return false;
 
-    const normalizedDate = slot.slotDate.includes("T")
-      ? slot.slotDate.split("T")[0]
-      : slot.slotDate;
+    const normalizedDate = (slot.slotDate.includes("T") ? slot.slotDate.split("T")[0] : slot.slotDate).trim();
+    const dateMatch = normalizedDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!dateMatch) return false;
 
-    const [endHour, endMinute] = slot.endTime.split(":").map((x) => parseInt(x, 10));
-    if (Number.isNaN(endHour) || Number.isNaN(endMinute)) return false;
+    const endTimeParts = parseTimeTo24HourParts(slot.endTime);
+    if (!endTimeParts) return false;
 
-    const slotEnd = new Date(`${normalizedDate}T00:00:00`);
-    if (Number.isNaN(slotEnd.getTime())) return false;
-    slotEnd.setHours(endHour, endMinute, 0, 0);
+    const year = Number.parseInt(dateMatch[1], 10);
+    const monthIndex = Number.parseInt(dateMatch[2], 10) - 1;
+    const day = Number.parseInt(dateMatch[3], 10);
+    const slotEnd = new Date(year, monthIndex, day, endTimeParts.hour, endTimeParts.minute, 0, 0);
+
     return slotEnd.getTime() > Date.now();
   };
 
