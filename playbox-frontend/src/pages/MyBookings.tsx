@@ -88,10 +88,15 @@ export default function MyBookings() {
     const slot = slotById[booking.slotId];
     if (!slot?.slotDate || !slot?.endTime) return false;
 
-    const [endHour, endMinute] = slot.endTime.split(":").map((x) => Number(x));
+    const normalizedDate = slot.slotDate.includes("T")
+      ? slot.slotDate.split("T")[0]
+      : slot.slotDate;
+
+    const [endHour, endMinute] = slot.endTime.split(":").map((x) => parseInt(x, 10));
     if (Number.isNaN(endHour) || Number.isNaN(endMinute)) return false;
 
-    const slotEnd = new Date(`${slot.slotDate}T00:00:00`);
+    const slotEnd = new Date(`${normalizedDate}T00:00:00`);
+    if (Number.isNaN(slotEnd.getTime())) return false;
     slotEnd.setHours(endHour, endMinute, 0, 0);
     return slotEnd.getTime() > Date.now();
   };

@@ -110,11 +110,18 @@ export default function PlayerHome() {
         });
         setSportsById(sportsMap);
 
-        const uniqueSlotIds = Array.from(
-          new Set(normalizedBookings.map((booking) => booking.slotId).filter((id) => typeof id === "number"))
+        // Fetch slot details only for recent bookings shown on dashboard to reduce load time.
+        const recentBookingSlotIds = Array.from(
+          new Set(
+            [...normalizedBookings]
+              .sort((a, b) => b.id - a.id)
+              .slice(0, 6)
+              .map((booking) => booking.slotId)
+              .filter((id) => typeof id === "number")
+          )
         );
         const slotDetails = await Promise.all(
-          uniqueSlotIds.map(async (slotId) => {
+          recentBookingSlotIds.map(async (slotId) => {
             try {
               return await api.getSlotById(slotId);
             } catch {

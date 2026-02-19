@@ -136,7 +136,7 @@ export default function Login({
             <Smartphone size={24} className="text-purple-300" />
           </div>
           <h1> Elite Club</h1>
-          <p className="text-gray-300 mt-2">Book your favorite sports venues</p>
+          <p className="mt-2" style={{ color: "#ffffff" }}>Book your favorite sports venues</p>
         </div>
 
         {/* Toggle */}
@@ -253,7 +253,7 @@ export default function Login({
                       disabled={loading}
                     />
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm mt-1" style={{ color: "#ffffff" }}>
                     Enter your 10-digit mobile number
                   </p>
                 </div>
