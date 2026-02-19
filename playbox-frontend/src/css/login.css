@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(145deg, #000000 0%, #0a0a0a 55%, #121212 100%);
   padding: 1rem;
   font-family: 'Inter', sans-serif;
   position: relative;
@@ -31,7 +31,7 @@
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 24px;
@@ -42,7 +42,7 @@
     0 20px 40px rgba(0, 0, 0, 0.1),
     0 8px 32px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   position: relative;
   z-index: 1;
 }
@@ -92,8 +92,8 @@
 }
 
 .toggle-btn.active {
-  background: white;
-  color: #667eea;
+  background: #ffffff;
+  color: #111111;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -136,7 +136,7 @@
 
 .form-input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.55);
   background: rgba(255, 255, 255, 0.15);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
@@ -186,8 +186,8 @@
 
 /* Button Styling */
 .login-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #ffffff;
+  color: #0f172a;
   border: none;
   border-radius: 12px;
   padding: 16px;
@@ -202,7 +202,7 @@
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.28);
 }
 
 .login-btn:active {
@@ -225,9 +225,9 @@
 
 /* Error Message */
 .login-error {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fecaca;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #ffe4e6;
   padding: 12px 16px;
   border-radius: 12px;
   margin-bottom: 1.5rem;
@@ -270,7 +270,7 @@
 }
 
 .demo-role {
-  color: #667eea;
+  color: #f8fafc;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -315,7 +315,7 @@
 }
 
 .support-link a {
-  color: #667eea;
+  color: #ffffff;
   text-decoration: none;
 }
 
