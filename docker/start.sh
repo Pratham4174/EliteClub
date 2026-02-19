@@ -35,9 +35,19 @@ for i in $(seq 1 60); do
   sleep 1
 done
 
-mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock <<SQL
+run_mysql() {
+  if mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock -e "SELECT 1;" >/dev/null 2>&1; then
+    mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock "$@"
+    return 0
+  fi
+
+  mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot -p"${MYSQL_ROOT_PASSWORD}" "$@"
+}
+
+run_mysql <<SQL
 CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
 CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+ALTER USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
 GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
 FLUSH PRIVILEGES;
