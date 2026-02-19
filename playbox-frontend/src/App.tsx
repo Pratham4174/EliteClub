@@ -607,55 +607,55 @@ export default function App() {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setIsAdminView(!isAdminView);
-              if (!isAdminView) {
-                console.log("Switching to admin view, loading users...");
-                loadAllUsers();
-              }
-            }}
-            className="btn btn-outline"
-            style={{
-              backgroundColor: isAdminView ? "#4f46e5" : "transparent",
-              border: "1px solid rgba(255,255,255,0.3)",
-              color: "white",
-            }}
-          >
-            <Settings size={16} className="btn-icon" />
-            {isAdminView ? "Back to RFID" : "Find Users"}
-          </button>
-          {isOwner && (
-  <button
-    type="button"
-    onClick={goToOwnerDashboard}
-    className="btn btn-outline"
-    style={{
-      border: "1px solid rgba(255,255,255,0.3)",
-      color: "white",
-      marginLeft: "8px"
-    }}
-  >
-    Owner Dashboard
-  </button>
-)}
-
-          {isLoggedIn && (
+          <div className="header-actions">
             <button
-              onClick={handleLogout}
-              className="btn btn-outline logout-btn"
+              onClick={() => {
+                setIsAdminView(!isAdminView);
+                if (!isAdminView) {
+                  console.log("Switching to admin view, loading users...");
+                  loadAllUsers();
+                }
+              }}
+              className="btn btn-outline header-action-btn"
               style={{
+                backgroundColor: isAdminView ? "#4f46e5" : "transparent",
                 border: "1px solid rgba(255,255,255,0.3)",
                 color: "white",
-                backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                marginLeft: '8px'
               }}
             >
-              <LogOut size={16} className="btn-icon" />
-              Logout
+              <Settings size={16} className="btn-icon" />
+              {isAdminView ? "Back to RFID" : "Find Users"}
             </button>
-            
-          )}
+            {isOwner && (
+              <button
+                type="button"
+                onClick={goToOwnerDashboard}
+                className="btn btn-outline header-action-btn"
+                style={{
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  color: "white",
+                }}
+              >
+                Owner Dashboard
+              </button>
+            )}
+
+            {isLoggedIn && (
+              <button
+                onClick={handleLogout}
+                className="btn btn-outline logout-btn header-action-btn"
+                style={{
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  color: "white",
+                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                }}
+              >
+                <LogOut size={16} className="btn-icon" />
+                Logout
+              </button>
+              
+            )}
+          </div>
         </div>
       </header>
 
@@ -756,7 +756,7 @@ export default function App() {
                 <button
                   onClick={searchByPhone}
                   disabled={loading || !searchPhone.trim()}
-                  className="btn btn-primary"
+                  className="btn btn-primary admin-search-btn"
                   style={{ marginLeft: 8 }}
                 >
                   <Search size={16} className="btn-icon" />
@@ -765,7 +765,7 @@ export default function App() {
                 <button
                   onClick={loadAllUsers}
                   disabled={loading}
-                  className="btn btn-outline"
+                  className="btn btn-outline admin-search-btn"
                   style={{ marginLeft: 8 }}
                 >
                   {loading ? (
@@ -863,7 +863,7 @@ export default function App() {
               <div className="card" style={{ marginTop: 16 }}>
                 <div style={{ padding: 16 }}>
                   <h3 className="section-title" style={{ marginBottom: 12 }}>Day-wise Slot Status</h3>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <div className="admin-overview-controls" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <select
                       value={overviewSportId}
                       onChange={(e) => setOverviewSportId(e.target.value ? Number(e.target.value) : "")}

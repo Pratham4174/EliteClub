@@ -750,6 +750,88 @@
     .quick-stats {
       grid-template-columns: 1fr;
     }
+
+    .header-content {
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 14px 16px;
+    }
+
+    .logo-container {
+      width: 100%;
+    }
+
+    .app-title {
+      font-size: 1rem;
+    }
+
+    .app-subtitle {
+      font-size: 0.8rem;
+      line-height: 1.25;
+    }
+
+    .header-actions {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .header-action-btn {
+      width: 100%;
+      margin-left: 0 !important;
+      justify-content: center;
+    }
+
+    .app-main {
+      padding: 14px;
+    }
+
+    .section,
+    .admin-panel {
+      padding: 14px;
+    }
+
+    .scanner-container {
+      flex-direction: column;
+    }
+
+    .scan-button {
+      width: 100%;
+    }
+
+    .status-card {
+      padding: 12px;
+      align-items: flex-start;
+    }
+
+    .search-container {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .admin-search-btn {
+      width: 100%;
+      margin-left: 0 !important;
+    }
+
+    .table-header-cell,
+    .table-cell {
+      padding: 10px 8px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .admin-overview-controls {
+      flex-direction: column;
+      align-items: stretch !important;
+    }
+
+    .admin-overview-controls .input-field,
+    .admin-overview-controls .btn {
+      width: 100%;
+      min-width: 0 !important;
+    }
   }
   
   /* Button sizes */

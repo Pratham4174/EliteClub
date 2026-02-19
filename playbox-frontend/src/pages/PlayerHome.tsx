@@ -353,6 +353,67 @@ export default function PlayerHome() {
         )}
 
         <div
+          ref={accountCardRef}
+          style={{ marginTop: 16, background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 16, boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)" }}
+        >
+          <h3 style={{ margin: "0 0 10px", color: "#0f172a" }}>Account Snapshot</h3>
+          <div
+            style={{
+              borderRadius: 16,
+              padding: 18,
+              color: "#ffffff",
+              background: "linear-gradient(145deg, #060606 0%, #101010 45%, #1a1a1a 100%)",
+              border: "1px solid #7a7a7a",
+              boxShadow: "0 12px 26px rgba(0, 0, 0, 0.35)",
+              minHeight: 180,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1.2, color: "#d4d4d8" }}>ELITECLUB</div>
+              <div
+                style={{
+                  border: "1px solid #a3a3a3",
+                  background: "linear-gradient(135deg, #4b5563 0%, #9ca3af 100%)",
+                  borderRadius: 999,
+                  padding: "4px 10px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#0a0a0a",
+                }}
+              >
+                MEMBER
+              </div>
+            </div>
+
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 11, color: "#a3a3a3", marginBottom: 4, letterSpacing: 0.8 }}>
+                CARD NUMBER
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: 1.4, color: "#e5e7eb" }}>
+                {sessionUser.cardUid || "Not Assigned"}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "end", gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 11, color: "#a3a3a3", marginBottom: 4, letterSpacing: 0.8 }}>
+                  BALANCE
+                </div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: "#f5f5f5" }}>
+                  ₹{Number(profile?.currentBalance ?? sessionUser.balance ?? 0).toLocaleString()}
+                </div>
+              </div>
+              <div style={{ fontSize: 11, color: "#d4d4d8", textAlign: "right" }}>
+                Last Visit: {profile?.lastVisit ? new Date(profile.lastVisit).toLocaleString() : "-"}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
           style={{
             marginTop: 16,
             display: "grid",
@@ -422,67 +483,6 @@ export default function PlayerHome() {
                 ))}
             </div>
           )}
-        </div>
-
-        <div
-          ref={accountCardRef}
-          style={{ marginTop: 16, background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 16, boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)" }}
-        >
-          <h3 style={{ margin: "0 0 10px", color: "#0f172a" }}>Account Snapshot</h3>
-          <div
-            style={{
-              borderRadius: 16,
-              padding: 18,
-              color: "#ffffff",
-              background: "linear-gradient(145deg, #060606 0%, #101010 45%, #1a1a1a 100%)",
-              border: "1px solid #7a7a7a",
-              boxShadow: "0 12px 26px rgba(0, 0, 0, 0.35)",
-              minHeight: 180,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1.2, color: "#d4d4d8" }}>ELITECLUB</div>
-              <div
-                style={{
-                  border: "1px solid #a3a3a3",
-                  background: "linear-gradient(135deg, #4b5563 0%, #9ca3af 100%)",
-                  borderRadius: 999,
-                  padding: "4px 10px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "#0a0a0a",
-                }}
-              >
-                MEMBER
-              </div>
-            </div>
-
-            <div style={{ marginTop: 10 }}>
-              <div style={{ fontSize: 11, color: "#a3a3a3", marginBottom: 4, letterSpacing: 0.8 }}>
-                CARD NUMBER
-              </div>
-              <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: 1.4, color: "#e5e7eb" }}>
-                {sessionUser.cardUid || "Not Assigned"}
-              </div>
-            </div>
-
-            <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "end", gap: 10 }}>
-              <div>
-                <div style={{ fontSize: 11, color: "#a3a3a3", marginBottom: 4, letterSpacing: 0.8 }}>
-                  BALANCE
-                </div>
-                <div style={{ fontSize: 26, fontWeight: 800, color: "#f5f5f5" }}>
-                  ₹{Number(profile?.currentBalance ?? sessionUser.balance ?? 0).toLocaleString()}
-                </div>
-              </div>
-              <div style={{ fontSize: 11, color: "#d4d4d8", textAlign: "right" }}>
-                Last Visit: {profile?.lastVisit ? new Date(profile.lastVisit).toLocaleString() : "-"}
-              </div>
-            </div>
-          </div>
         </div>
 
         <div style={{ marginTop: 16, background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 16, boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)" }}>
