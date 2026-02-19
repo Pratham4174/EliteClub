@@ -235,7 +235,10 @@ verifyOtp: async (phone: string, otp: string, name?: string) => {
       { method: "POST" }
     );
   
-    if (!res.ok) throw new Error("Deduction failed");
+    if (!res.ok) {
+      const error = await res.text().catch(() => "");
+      throw new Error(error || "Deduction failed");
+    }
     return await res.json();
   },
   cancelUserCard: async (

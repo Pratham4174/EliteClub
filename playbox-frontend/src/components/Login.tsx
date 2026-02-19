@@ -31,6 +31,9 @@ export default function Login() {
     
     try {
       const adminData = await api.login(username, password);
+      // Ensure a pure admin session
+      localStorage.removeItem("player");
+      localStorage.removeItem("isPlayerLoggedIn");
       localStorage.setItem("admin", JSON.stringify(adminData));
       localStorage.setItem("isAdminLoggedIn", "true");
       toast.success("Admin login successful!");
@@ -73,7 +76,7 @@ export default function Login() {
 
   const handleVerifyOtp = async () => {
     if (!otp.trim() || otp.length !== 4) {
-      toast.error("Please enter a valid 6-digit OTP");
+      toast.error("Please enter a valid 4-digit OTP");
       return;
     }
 
@@ -96,6 +99,9 @@ export default function Login() {
 
     try {
       const user = await api.verifyOtp(phone, otp, name);
+      // Ensure a pure player session
+      localStorage.removeItem("admin");
+      localStorage.removeItem("isAdminLoggedIn");
       localStorage.setItem("player", JSON.stringify(user));
       localStorage.setItem("isPlayerLoggedIn", "true");
       toast.success("Login successful!");
@@ -264,7 +270,7 @@ export default function Login() {
                   <input
                     type="text"
                     className="form-input otp-input"
-                    placeholder="123456"
+                    placeholder="1234"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
                     disabled={loading}
@@ -339,7 +345,7 @@ export default function Login() {
               <div className="demo-role">Player</div>
               <div className="demo-info">
                 <div>Phone: 9876543210</div>
-                <div>OTP: 123456</div>
+                <div>OTP: 1234</div>
               </div>
             </div>
           </div>

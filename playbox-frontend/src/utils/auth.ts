@@ -1,5 +1,7 @@
 export const isAdminLoggedIn = () => {
-    return localStorage.getItem("isAdminLoggedIn") === "true";
+    if (localStorage.getItem("isAdminLoggedIn") !== "true") return false;
+    const admin = localStorage.getItem("admin");
+    return Boolean(admin);
   };
   
   export const getAdmin = () => {

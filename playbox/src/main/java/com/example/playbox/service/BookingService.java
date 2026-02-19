@@ -51,6 +51,9 @@ public class BookingService {
         Sport sport = slot.getSport();
     
         Float amount = sport.getPricePerHour();
+        if (amount == null || amount <= 0f) {
+            throw new RuntimeException("Sport pricing is not configured");
+        }
     
         // 3️⃣ Fetch user
         PlayBoxUser user = userRepository.findById(userId)
@@ -65,11 +68,12 @@ public class BookingService {
         }
 
         // 4️⃣ Wallet payment
-        if (user.getBalance() == null || user.getBalance() < amount) {
+        float currentBalance = user.getBalance() == null ? 0f : user.getBalance();
+        if (currentBalance < amount) {
             throw new RuntimeException("Insufficient balance");
         }
 
-        user.setBalance(user.getBalance() - amount);
+        user.setBalance(currentBalance - amount);
         userRepository.save(user);
 
         TransactionEntity txn = new TransactionEntity();

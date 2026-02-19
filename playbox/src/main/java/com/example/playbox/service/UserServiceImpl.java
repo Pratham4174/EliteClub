@@ -65,7 +65,8 @@ public class UserServiceImpl {
     public PlayBoxUser addBalance(String cardUid, float amount, String adminName) {
         PlayBoxUser user = getByCardUid(cardUid);
 
-        user.setBalance(user.getBalance() + amount);
+        float currentBalance = user.getBalance() == null ? 0f : user.getBalance();
+        user.setBalance(currentBalance + amount);
         user.setUpdatedAt(LocalDateTime.now().toString());
        
 
@@ -100,7 +101,8 @@ public class UserServiceImpl {
             throw new RuntimeException("Slot selection is required for " + description);
         }
 
-        if (user.getBalance() < amount) {
+        float currentBalance = user.getBalance() == null ? 0f : user.getBalance();
+        if (currentBalance < amount) {
             throw new RuntimeException("Insufficient Balance");
         }
 
@@ -132,7 +134,7 @@ public class UserServiceImpl {
             bookedSportName = slot.getSport() != null ? slot.getSport().getName() : null;
         }
 
-        user.setBalance(user.getBalance() - amount);
+        user.setBalance(currentBalance - amount);
         user.setUpdatedAt(LocalDateTime.now().toString());
 
         saveTransaction(user, "DEDUCT", amount, deductor, description);
