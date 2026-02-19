@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 import "./css/main.css"; // Custom CSS
 import "./index.css"; // Tailwind
 import type { AdminSportDayOverview, PlayBoxUser, Slot, Sport, StatusType } from "./types";
-import { formatSlotRange } from "./utils/formatters";
+import { formatSlotRange, isPresentOrFutureSlot } from "./utils/formatters";
 import { api } from "./utils/api";
 
 const SLOT_REQUIRED_ACTIVITIES = new Set(["cricket", "pickleball", "swimming pool", "swimming"]);
@@ -1167,7 +1167,13 @@ export default function App() {
                 <select
                   value={description}
                   onChange={(e) => {
-                    setDescription(e.target.value);
+                    const selectedActivity = e.target.value;
+                    setDescription(selectedActivity);
+                    if (selectedActivity === "Cricket") {
+                      setAmount(1000);
+                    } else if (selectedActivity === "Pickleball") {
+                      setAmount(600);
+                    }
                     setDeductSportId("");
                     setSelectedSlotId("");
                     setSlots([]);
@@ -1217,6 +1223,7 @@ export default function App() {
                         setSlotDate(e.target.value);
                         setSelectedSlotId("");
                       }}
+                      min={new Date().toISOString().slice(0, 10)}
                       className="input-field"
                       style={{ width: "100%" }}
                     />
@@ -1236,7 +1243,7 @@ export default function App() {
                         {slotLoading ? "Loading slots..." : "Select Available Slot"}
                       </option>
                       {slots
-                        .filter((slot) => !slot.booked)
+                        .filter((slot) => !slot.booked && isPresentOrFutureSlot(slotDate, slot.startTime, slot.endTime))
                         .map((slot) => (
                           <option key={slot.id} value={slot.id}>
                             {formatSlotRange(slot.startTime, slot.endTime)}

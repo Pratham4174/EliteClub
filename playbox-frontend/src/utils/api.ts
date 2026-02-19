@@ -12,8 +12,9 @@ import type {
   UserStats
 } from "../types";
 
-const BACKEND_URL = "http://localhost:8080/playbox";
-// const BACKEND_URL = "https://playboxcardbackend-production.up.railway.app/playbox";
+const BACKEND_URL =
+  (import.meta.env.VITE_BACKEND_URL as string | undefined)?.replace(/\/+$/, "") ||
+  "http://localhost:8080/playbox";
 
 export const api = {
   // ====================
