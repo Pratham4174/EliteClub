@@ -16,7 +16,7 @@ RUN chmod +x mvnw && ./mvnw -q -DskipTests dependency:go-offline
 COPY playbox/src ./src
 RUN ./mvnw -q -DskipTests package
 
-FROM debian:bookworm-slim
+FROM eclipse-temurin:21-jre-jammy
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -24,7 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gettext-base \
     nginx \
     mariadb-server \
-    openjdk-21-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
