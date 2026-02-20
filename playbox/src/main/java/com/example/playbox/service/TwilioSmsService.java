@@ -81,6 +81,23 @@ public class TwilioSmsService {
         );
     }
 
+    public void sendOfflineBookingOtp(
+            String phone,
+            String otp,
+            String sportName,
+            String slotDate,
+            String startTime,
+            String endTime
+    ) {
+        String sport = isBlank(sportName) ? "Sport" : sportName;
+        sendSms(
+                phone,
+                "Elite Club booking OTP " + otp + " for " + sport + " on " + slotDate + " at "
+                        + toAmPm(startTime) + " - " + toAmPm(endTime)
+                        + ". Show this OTP at venue. Payment: OFFLINE."
+        );
+    }
+
     public void sendCardCreated(String phone, String cardUid) {
         sendSms(phone, "Elite Club: RFID card created successfully. Card ID: " + cardUid + ".");
     }

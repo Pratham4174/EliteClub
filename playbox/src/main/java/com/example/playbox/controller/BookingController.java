@@ -58,6 +58,7 @@ public class BookingController {
         return bookingService.adminManualBookSlot(
                 request.getName(),
                 request.getPhone(),
+                request.getEmail(),
                 request.getSlotId()
         );
     }

@@ -78,6 +78,16 @@ export default function App() {
   const [overviewDate, setOverviewDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [dayOverview, setDayOverview] = useState<AdminSportDayOverview | null>(null);
+  const [showBlockSlotModal, setShowBlockSlotModal] = useState(false);
+  const [blockBookingName, setBlockBookingName] = useState("");
+  const [blockBookingPhone, setBlockBookingPhone] = useState("");
+  const [blockBookingEmail, setBlockBookingEmail] = useState("");
+  const [blockBookingSportId, setBlockBookingSportId] = useState<number | "">("");
+  const [blockBookingDate, setBlockBookingDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [blockBookingSlots, setBlockBookingSlots] = useState<Slot[]>([]);
+  const [blockBookingSlotId, setBlockBookingSlotId] = useState<number | "">("");
+  const [blockSlotLoading, setBlockSlotLoading] = useState(false);
+  const [blockSlotSubmitting, setBlockSlotSubmitting] = useState(false);
   const [bookingNotifications, setBookingNotifications] = useState<BookingNotification[]>([]);
   const [bookingNotificationsLoading, setBookingNotificationsLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -180,23 +190,28 @@ export default function App() {
   }, [showDeductModal, requiresSlotSelection, deductSportId, slotDate]);
 
   useEffect(() => {
-    if (!isAdminView) {
+    if (isAdminView) {
       return;
     }
-    const fetchNotifications = async () => {
-      try {
-        setBookingNotificationsLoading(true);
-        const data = await api.getBookingNotifications();
-        setBookingNotifications(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Failed to load booking notifications:", error);
-      } finally {
-        setBookingNotificationsLoading(false);
-      }
-    };
-
-    fetchNotifications();
+    loadBookingNotifications();
   }, [isAdminView]);
+
+  useEffect(() => {
+    if (!showBlockSlotModal || blockBookingSportId === "") {
+      setBlockBookingSlots([]);
+      setBlockBookingSlotId("");
+      return;
+    }
+
+    setBlockSlotLoading(true);
+    api.getSlots(Number(blockBookingSportId), blockBookingDate)
+      .then((data) => setBlockBookingSlots(Array.isArray(data) ? data : []))
+      .catch((error) => {
+        console.error("Failed to load block-slot options:", error);
+        setBlockBookingSlots([]);
+      })
+      .finally(() => setBlockSlotLoading(false));
+  }, [showBlockSlotModal, blockBookingSportId, blockBookingDate]);
 
   if (loading) {
     return (
@@ -563,15 +578,69 @@ export default function App() {
     }
   };
 
-  const loadBookingNotifications = async () => {
+  function loadBookingNotifications() {
+    return (async () => {
+      try {
+        setBookingNotificationsLoading(true);
+        const data = await api.getBookingNotifications();
+        setBookingNotifications(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to load booking notifications:", error);
+      } finally {
+        setBookingNotificationsLoading(false);
+      }
+    })();
+  }
+
+  const openBlockSlotModal = () => {
+    setShowBlockSlotModal(true);
+    setBlockBookingName("");
+    setBlockBookingPhone("");
+    setBlockBookingEmail("");
+    setBlockBookingSportId("");
+    setBlockBookingDate(new Date().toISOString().slice(0, 10));
+    setBlockBookingSlots([]);
+    setBlockBookingSlotId("");
+  };
+
+  const handleBlockSlotBooking = async () => {
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!blockBookingName.trim()) {
+      setStatus({ text: "Name is required", type: "warning" });
+      return;
+    }
+    if (!phoneRegex.test(blockBookingPhone.trim())) {
+      setStatus({ text: "Enter valid 10-digit phone number", type: "warning" });
+      return;
+    }
+    if (blockBookingSportId === "") {
+      setStatus({ text: "Please select sport/court", type: "warning" });
+      return;
+    }
+    if (blockBookingSlotId === "") {
+      setStatus({ text: "Please select slot", type: "warning" });
+      return;
+    }
+
     try {
-      setBookingNotificationsLoading(true);
-      const data = await api.getBookingNotifications();
-      setBookingNotifications(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to load booking notifications:", error);
+      setBlockSlotSubmitting(true);
+      await api.adminBlockSlot({
+        name: blockBookingName.trim(),
+        phone: blockBookingPhone.trim(),
+        email: blockBookingEmail.trim() || undefined,
+        slotId: Number(blockBookingSlotId),
+      });
+
+      setShowBlockSlotModal(false);
+      setStatus({
+        text: "Slot blocked successfully (OFFLINE payment). OTP SMS sent to user.",
+        type: "success",
+      });
+      loadBookingNotifications();
+    } catch (error: any) {
+      setStatus({ text: `Error: ${error.message || "Failed to block slot"}`, type: "error" });
     } finally {
-      setBookingNotificationsLoading(false);
+      setBlockSlotSubmitting(false);
     }
   };
 
@@ -732,6 +801,12 @@ export default function App() {
                   Scan
                 </button>
               </div>
+
+              <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={openBlockSlotModal} className="btn btn-outline">
+                  Block Slot (Offline)
+                </button>
+              </div>
               
               {activeUid && (
                 <div className="rfid-info">
@@ -761,67 +836,69 @@ export default function App() {
             </span>
           </div>
 
+          {!isAdminView && (
+            <div className="card" style={{ marginBottom: 16 }}>
+              <div style={{ padding: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <h3 className="section-title" style={{ marginBottom: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                    <Bell size={18} />
+                    Booking Notifications
+                  </h3>
+                  <button
+                    onClick={loadBookingNotifications}
+                    disabled={bookingNotificationsLoading}
+                    className="btn btn-outline"
+                  >
+                    {bookingNotificationsLoading ? "Loading..." : "Refresh"}
+                  </button>
+                </div>
+
+                {bookingNotifications.length === 0 ? (
+                  <p style={{ color: "#6b7280", margin: 0 }}>No booking notifications yet.</p>
+                ) : (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {bookingNotifications.slice(0, 10).map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 10,
+                          padding: 10,
+                          background: item.seen ? "#ffffff" : "#f0f9ff",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                          <div>
+                            <div style={{ fontWeight: 600, color: "#111827" }}>{item.userName} ({item.userPhone})</div>
+                            <div style={{ color: "#374151", fontSize: 14 }}>
+                              {item.sportName} | {item.slotDate} | {formatSlotRange(item.startTime, item.endTime)}
+                            </div>
+                            <div style={{ color: "#6b7280", fontSize: 12, marginTop: 4 }}>{item.createdAt}</div>
+                          </div>
+                          {!item.seen && (
+                            <button
+                              onClick={() => handleMarkNotificationSeen(item.id)}
+                              className="btn btn-primary"
+                              style={{ height: 34, padding: "0 12px" }}
+                            >
+                              Mark Seen
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Admin Panel */}
           {isAdminView ? (
             <div className="card admin-panel">
               <div className="section-header">
                 <Users size={20} className="btn-icon" />
                 <h2 className="section-title">Admin Panel</h2>
-              </div>
-
-              <div className="card" style={{ marginBottom: 16 }}>
-                <div style={{ padding: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <h3 className="section-title" style={{ marginBottom: 0, display: "flex", alignItems: "center", gap: 8 }}>
-                      <Bell size={18} />
-                      Booking Notifications
-                    </h3>
-                    <button
-                      onClick={loadBookingNotifications}
-                      disabled={bookingNotificationsLoading}
-                      className="btn btn-outline"
-                    >
-                      {bookingNotificationsLoading ? "Loading..." : "Refresh"}
-                    </button>
-                  </div>
-
-                  {bookingNotifications.length === 0 ? (
-                    <p style={{ color: "#6b7280", margin: 0 }}>No booking notifications yet.</p>
-                  ) : (
-                    <div style={{ display: "grid", gap: 8 }}>
-                      {bookingNotifications.slice(0, 20).map((item) => (
-                        <div
-                          key={item.id}
-                          style={{
-                            border: "1px solid #e5e7eb",
-                            borderRadius: 10,
-                            padding: 10,
-                            background: item.seen ? "#ffffff" : "#f0f9ff",
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                            <div>
-                              <div style={{ fontWeight: 600, color: "#111827" }}>{item.userName} ({item.userPhone})</div>
-                              <div style={{ color: "#374151", fontSize: 14 }}>
-                                {item.sportName} | {item.slotDate} | {formatSlotRange(item.startTime, item.endTime)}
-                              </div>
-                              <div style={{ color: "#6b7280", fontSize: 12, marginTop: 4 }}>{item.createdAt}</div>
-                            </div>
-                            {!item.seen && (
-                              <button
-                                onClick={() => handleMarkNotificationSeen(item.id)}
-                                className="btn btn-primary"
-                                style={{ height: 34, padding: "0 12px" }}
-                              >
-                                Mark Seen
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
               
               {/* Debug Info */}
@@ -1478,6 +1555,124 @@ export default function App() {
         )}
 
       </main>
+
+      {showBlockSlotModal && (
+        <div className="modal-overlay" onClick={() => setShowBlockSlotModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div style={{ position: "relative" }}>
+              <h2 className="modal-title">Block Slot (Offline Payment)</h2>
+              <button onClick={() => setShowBlockSlotModal(false)} className="modal-close">✕</button>
+            </div>
+
+            <div className="form-group">
+              <label className="label">Name *</label>
+              <input
+                value={blockBookingName}
+                onChange={(e) => setBlockBookingName(e.target.value)}
+                className="input-field"
+                placeholder="Enter customer name"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="label">Phone *</label>
+              <input
+                value={blockBookingPhone}
+                onChange={(e) => setBlockBookingPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                className="input-field"
+                placeholder="10-digit phone"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="label">Email (Optional)</label>
+              <input
+                type="email"
+                value={blockBookingEmail}
+                onChange={(e) => setBlockBookingEmail(e.target.value)}
+                className="input-field"
+                placeholder="Enter email"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="label">Sport / Court *</label>
+              <select
+                value={blockBookingSportId}
+                onChange={(e) => setBlockBookingSportId(e.target.value ? Number(e.target.value) : "")}
+                className="input-field"
+                style={{ padding: "10px 12px" }}
+              >
+                <option value="">Select Sport/Court</option>
+                {sports.map((sport) => (
+                  <option key={sport.id} value={sport.id}>
+                    {sport.name} - {sport.courtName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="label">Date *</label>
+              <input
+                type="date"
+                value={blockBookingDate}
+                onChange={(e) => setBlockBookingDate(e.target.value)}
+                className="input-field"
+                min={new Date().toISOString().slice(0, 10)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="label">Available Slot *</label>
+              <select
+                value={blockBookingSlotId}
+                onChange={(e) => setBlockBookingSlotId(e.target.value ? Number(e.target.value) : "")}
+                className="input-field"
+                style={{ padding: "10px 12px" }}
+                disabled={blockBookingSportId === "" || blockSlotLoading}
+              >
+                <option value="">{blockSlotLoading ? "Loading slots..." : "Select Slot"}</option>
+                {blockBookingSlots
+                  .filter((slot) => !slot.booked && isPresentOrFutureSlot(blockBookingDate, slot.startTime, slot.endTime))
+                  .map((slot) => (
+                    <option key={slot.id} value={slot.id}>
+                      {formatSlotRange(slot.startTime, slot.endTime)}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div
+              style={{
+                marginBottom: 12,
+                padding: 10,
+                borderRadius: 8,
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                color: "#334155",
+                fontSize: 13,
+              }}
+            >
+              Payment Mode: <strong>OFFLINE</strong> (collected physically by admin)
+            </div>
+
+            <div className="modal-actions">
+              <button onClick={() => setShowBlockSlotModal(false)} className="btn btn-outline" style={{ flex: 1 }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleBlockSlotBooking}
+                disabled={blockSlotSubmitting}
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+              >
+                {blockSlotSubmitting ? "Blocking..." : "Block Slot"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="app-footer">

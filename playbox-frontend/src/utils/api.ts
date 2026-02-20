@@ -89,6 +89,22 @@ bookSlot: async (
 
   return await res.json();
 },
+adminBlockSlot: async (payload: { name: string; phone: string; email?: string; slotId: number }) => {
+  const res = await fetch(
+    `${BACKEND_URL}/api/bookings/admin/manual-book`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!res.ok) {
+    const error = await res.text().catch(() => "");
+    throw new Error(error || "Slot block failed");
+  }
+  return await res.json();
+},
 getUserBookings: async (userId: number) => {
   const res = await fetch(
     `${BACKEND_URL}/api/bookings/user/${userId}`

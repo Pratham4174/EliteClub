@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -119,7 +120,7 @@ public class BookingService {
     }
 
     @Transactional
-    public Booking adminManualBookSlot(String name, String phone, Long slotId) {
+    public Booking adminManualBookSlot(String name, String phone, String email, Long slotId) {
         if (name == null || name.isBlank()) {
             throw new RuntimeException("Name is required");
         }
@@ -145,14 +146,15 @@ public class BookingService {
 
         PlayBoxUser user = userRepository.findByPhone(phone.trim());
         if (user != null) {
-            if (user.getCardUid() != null && !user.getCardUid().isBlank()) {
-                throw new RuntimeException("This user has an Elite Card assigned. Use card booking flow.");
-            }
             user.setName(name.trim());
+            if (email != null && !email.isBlank()) {
+                user.setEmail(email.trim());
+            }
         } else {
             user = new PlayBoxUser();
             user.setName(name.trim());
             user.setPhone(phone.trim());
+            user.setEmail(email == null || email.isBlank() ? null : email.trim());
             user.setBalance(0f);
             user.setCardUid(null);
         }
@@ -167,13 +169,15 @@ public class BookingService {
         booking.setSlotId(slot.getId());
         booking.setAmount(amount);
         booking.setStatus("CONFIRMED");
-        booking.setPaymentMode("ADMIN_MANUAL");
+        booking.setPaymentMode("OFFLINE");
         booking.setCreatedAt(Instant.now().toString());
 
         Booking savedBooking = bookingRepository.save(booking);
         PlayBoxUser finalUser = user;
-        sendSmsSafely(() -> twilioSmsService.sendBookingConfirmation(
+        String otp = String.valueOf(ThreadLocalRandom.current().nextInt(1000, 10000));
+        sendSmsSafely(() -> twilioSmsService.sendOfflineBookingOtp(
                 finalUser.getPhone(),
+                otp,
                 sport.getName(),
                 slot.getSlotDate(),
                 slot.getStartTime(),
