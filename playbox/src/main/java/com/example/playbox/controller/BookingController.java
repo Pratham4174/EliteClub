@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.playbox.dto.AdminSportDayOverviewDTO;
+import com.example.playbox.dto.AdminManualBookingRequest;
 import com.example.playbox.dto.BookingRequest;
 import com.example.playbox.model.Booking;
 import com.example.playbox.repository.BookingRepository;
@@ -43,6 +44,21 @@ public class BookingController {
                 request.getUserId(),
                 request.getSlotId(),
                 request.getPaymentMode()
+        );
+    }
+
+    @PostMapping("/admin/manual-book")
+    public Booking adminManualBook(@RequestBody AdminManualBookingRequest request) {
+        if (request.getName() == null || request.getName().isBlank()
+                || request.getPhone() == null || request.getPhone().isBlank()
+                || request.getSlotId() == null) {
+            throw new RuntimeException("name, phone and slotId are required");
+        }
+
+        return bookingService.adminManualBookSlot(
+                request.getName(),
+                request.getPhone(),
+                request.getSlotId()
         );
     }
 

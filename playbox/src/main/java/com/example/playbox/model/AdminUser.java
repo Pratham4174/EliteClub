@@ -21,4 +21,6 @@ public class AdminUser {
     private String password;
 
     private String role;   // STAFF / MANAGER / OWNER
+
+    private String phone;  // Optional: phone for SMS notifications
 }

@@ -1,5 +1,6 @@
 import type {
   AdminSportDayOverview,
+  BookingNotification,
   DailyRevenueDashboard,
   PlayBoxUser,
   ScanResponse,
@@ -86,6 +87,22 @@ bookSlot: async (
     throw new Error(error || "Booking failed");
   }
 
+  return await res.json();
+},
+adminManualBookSlot: async (payload: { name: string; phone: string; slotId: number }) => {
+  const res = await fetch(
+    `${BACKEND_URL}/api/bookings/admin/manual-book`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!res.ok) {
+    const error = await res.text().catch(() => "");
+    throw new Error(error || "Manual slot booking failed");
+  }
   return await res.json();
 },
 
@@ -277,6 +294,26 @@ verifyOtp: async (phone: string, otp: string, name?: string) => {
     if (!res.ok) {
       const error = await res.text();
       throw new Error(error || "Failed to fetch day overview");
+    }
+    return await res.json();
+  },
+
+  getBookingNotifications: async (): Promise<BookingNotification[]> => {
+    const res = await fetch(`${BACKEND_URL}/api/notifications/bookings`);
+    if (!res.ok) {
+      const error = await res.text().catch(() => "");
+      throw new Error(error || "Failed to fetch booking notifications");
+    }
+    return await res.json();
+  },
+
+  markBookingNotificationSeen: async (id: number): Promise<BookingNotification> => {
+    const res = await fetch(`${BACKEND_URL}/api/notifications/bookings/${id}/seen`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const error = await res.text().catch(() => "");
+      throw new Error(error || "Failed to mark notification as seen");
     }
     return await res.json();
   },

@@ -137,7 +137,7 @@ export interface UserStats {
     createdAt?: string;
   }
 
-  export interface AdminSportDayOverview {
+export interface AdminSportDayOverview {
     sportId: number;
     sportName: string;
     courtName: string;
@@ -146,6 +146,21 @@ export interface UserStats {
     bookedSlots: number;
     emptySlots: number;
     slots: AdminSlotStatus[];
+  }
+
+  export interface BookingNotification {
+    id: number;
+    bookingId: number;
+    userId: number;
+    userName: string;
+    userPhone: string;
+    sportName: string;
+    slotDate: string;
+    startTime: string;
+    endTime: string;
+    message: string;
+    seen: boolean;
+    createdAt: string;
   }
 
   

@@ -35,6 +35,7 @@ public class BookingService {
     private final PlayBoxUserRepository userRepository;
     private final TransactionRepository transactionRepository;
     private final TwilioSmsService twilioSmsService;
+    private final BookingNotificationService bookingNotificationService;
 
     @Transactional
     public Booking bookSlot(Integer userId, Long slotId, String paymentMode) {
@@ -112,6 +113,73 @@ public class BookingService {
                 amount,
                 user.getBalance()
         ));
+        bookingNotificationService.notifyBookingCreated(savedBooking, user, sport, slot);
+
+        return savedBooking;
+    }
+
+    @Transactional
+    public Booking adminManualBookSlot(String name, String phone, Long slotId) {
+        if (name == null || name.isBlank()) {
+            throw new RuntimeException("Name is required");
+        }
+        if (phone == null || phone.isBlank()) {
+            throw new RuntimeException("Phone is required");
+        }
+        if (slotId == null) {
+            throw new RuntimeException("Slot is required");
+        }
+
+        Slot slot = slotRepository.findWithLockingById(slotId)
+                .orElseThrow(() -> new RuntimeException("Slot not found"));
+
+        if (Boolean.TRUE.equals(slot.getBooked())) {
+            throw new RuntimeException("Slot already booked");
+        }
+
+        Sport sport = slot.getSport();
+        Float amount = sport.getPricePerHour();
+        if (amount == null || amount <= 0f) {
+            amount = 0f;
+        }
+
+        PlayBoxUser user = userRepository.findByPhone(phone.trim());
+        if (user != null) {
+            if (user.getCardUid() != null && !user.getCardUid().isBlank()) {
+                throw new RuntimeException("This user has an Elite Card assigned. Use card booking flow.");
+            }
+            user.setName(name.trim());
+        } else {
+            user = new PlayBoxUser();
+            user.setName(name.trim());
+            user.setPhone(phone.trim());
+            user.setBalance(0f);
+            user.setCardUid(null);
+        }
+        user = userRepository.save(user);
+
+        slot.setBooked(true);
+        slotRepository.save(slot);
+
+        Booking booking = new Booking();
+        booking.setUserId(user.getId());
+        booking.setSportId(sport.getId());
+        booking.setSlotId(slot.getId());
+        booking.setAmount(amount);
+        booking.setStatus("CONFIRMED");
+        booking.setPaymentMode("ADMIN_MANUAL");
+        booking.setCreatedAt(Instant.now().toString());
+
+        Booking savedBooking = bookingRepository.save(booking);
+        PlayBoxUser finalUser = user;
+        sendSmsSafely(() -> twilioSmsService.sendBookingConfirmation(
+                finalUser.getPhone(),
+                sport.getName(),
+                slot.getSlotDate(),
+                slot.getStartTime(),
+                slot.getEndTime()
+        ));
+        bookingNotificationService.notifyBookingCreated(savedBooking, finalUser, sport, slot);
 
         return savedBooking;
     }

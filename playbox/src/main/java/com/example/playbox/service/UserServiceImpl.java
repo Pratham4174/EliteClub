@@ -41,6 +41,7 @@ public class UserServiceImpl {
     private final BookingRepository bookingRepository;
     private final AdminUserRepository adminUserRepository;
     private final TwilioSmsService twilioSmsService;
+    private final BookingNotificationService bookingNotificationService;
 
     private static final Set<String> SLOT_REQUIRED_ACTIVITIES = new HashSet<>(Set.of(
             "cricket",
@@ -129,9 +130,10 @@ public class UserServiceImpl {
 
             slot.setBooked(true);
             slotRepository.save(slot);
-            bookingRepository.save(booking);
+            Booking savedBooking = bookingRepository.save(booking);
             bookedSlot = slot;
             bookedSportName = slot.getSport() != null ? slot.getSport().getName() : null;
+            bookingNotificationService.notifyBookingCreated(savedBooking, user, slot.getSport(), slot);
         }
 
         user.setBalance(currentBalance - amount);
