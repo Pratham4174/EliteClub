@@ -26,7 +26,7 @@ import { exportToCSV } from "../utils/export";
 interface FilterState {
   startDate?: string;
   endDate?: string;
-  type?: 'ADD' | 'DEDUCT' | 'NEW_USER';
+  type?: 'ADD' | 'DEDUCT' | 'BOOKING' | 'NEW_USER';
   userId?: number;
   adminName?: string;
 }
@@ -99,7 +99,7 @@ export default function OwnerDashboard() {
       .reduce((sum, t) => sum + (t.amount || 0), 0);
 
     const totalDeduct = filteredTransactions
-      .filter(t => t.type === "DEDUCT")
+      .filter(t => t.type === "DEDUCT" || t.type === "BOOKING")
       .reduce((sum, t) => sum + (t.amount || 0), 0);
 
     const totalNewUser = filteredTransactions
@@ -295,7 +295,9 @@ const handleFilter = useCallback(async (filters: FilterState) => {
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'ADD': return <Plus size={16} />;
-      case 'DEDUCT': return <Minus size={16} />;
+      case 'DEDUCT':
+      case 'BOOKING':
+        return <Minus size={16} />;
       case 'NEW_USER': return <UserPlus size={16} />;
       default: return <CreditCard size={16} />;
     }
@@ -305,7 +307,9 @@ const handleFilter = useCallback(async (filters: FilterState) => {
   const getTransactionColor = (type: string) => {
     switch (type) {
       case 'ADD': return '#10b981';
-      case 'DEDUCT': return '#ef4444';
+      case 'DEDUCT':
+      case 'BOOKING':
+        return '#ef4444';
       case 'NEW_USER': return '#8b5cf6';
       default: return '#6b7280';
     }
@@ -668,7 +672,7 @@ const handleFilter = useCallback(async (filters: FilterState) => {
                     <span className="type-label">{transaction.type.replace('_', ' ')}</span>
                   </div>
                   <span className="card-badge" style={{ color: getTransactionColor(transaction.type) }}>
-                    {transaction.type === 'ADD' ? '+' : transaction.type === 'DEDUCT' ? '-' : ''}₹{transaction.amount}
+                    {transaction.type === 'ADD' ? '+' : (transaction.type === 'DEDUCT' || transaction.type === 'BOOKING') ? '-' : ''}₹{transaction.amount}
                   </span>
                 </div>
                 <div className="card-body">
@@ -731,8 +735,8 @@ function getMockTransactions(): Transaction[] {
   const users = ["John Doe", "Jane Smith", "Bob Wilson", "Alice Johnson", "Charlie Brown"];
   
   return Array.from({ length: 15 }, (_, i) => {
-    const types: ('ADD' | 'DEDUCT' | 'NEW_USER')[] = ['ADD', 'DEDUCT', 'NEW_USER'];
-    const type = types[i % 3];
+    const types: ('ADD' | 'DEDUCT' | 'BOOKING' | 'NEW_USER')[] = ['ADD', 'DEDUCT', 'BOOKING', 'NEW_USER'];
+    const type = types[i % 4];
     
     return {
       id: 1000 + i,
@@ -741,7 +745,7 @@ function getMockTransactions(): Transaction[] {
       type: type,
       amount: type === 'NEW_USER' ? 0 : Math.floor(Math.random() * 5000) + 500,
       description: type === 'ADD' ? 'Balance added via cash' : 
-                   type === 'DEDUCT' ? 'Activity charge' : 
+                   (type === 'DEDUCT' || type === 'BOOKING') ? 'Activity charge' : 
                    'New user registration',
       timestamp: new Date(Date.now() - i * 86400000).toISOString(),
       adminName: admins[i % admins.length],

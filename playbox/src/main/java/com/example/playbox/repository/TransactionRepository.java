@@ -48,7 +48,7 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
     @Query("""
         SELECT COALESCE(SUM(t.amount), 0)
         FROM TransactionEntity t
-        WHERE t.type = 'DEDUCT'
+        WHERE t.type IN ('DEDUCT', 'BOOKING')
         AND t.timestamp >= :start
         AND t.timestamp <= :end
     """)

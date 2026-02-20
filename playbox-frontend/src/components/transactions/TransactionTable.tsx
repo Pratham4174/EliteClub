@@ -41,7 +41,7 @@ export default function TransactionTable({ transactions }: TransactionTableProps
       .reduce((sum, t) => sum + (t.amount || 0), 0);
     
     const totalDeduct = transactions
-      .filter(t => t.type === "DEDUCT")
+      .filter(t => t.type === "DEDUCT" || t.type === "BOOKING")
       .reduce((sum, t) => sum + (t.amount || 0), 0);
     
     const newUsers = transactions.filter(t => t.type === "NEW_USER").length;
@@ -131,6 +131,7 @@ export default function TransactionTable({ transactions }: TransactionTableProps
     switch (type) {
       case 'ADD': return { label: 'Add', icon: <TrendingUp size={14} />, color: '#10b981' };
       case 'DEDUCT': return { label: 'Deduct', icon: <TrendingDown size={14} />, color: '#ef4444' };
+      case 'BOOKING': return { label: 'Booking', icon: <Calendar size={14} />, color: '#ef4444' };
       case 'NEW_USER': return { label: 'New User', icon: <UserPlus size={14} />, color: '#8b5cf6' };
       default: return { label: type, icon: <Info size={14} />, color: '#6b7280' };
     }
@@ -234,6 +235,7 @@ export default function TransactionTable({ transactions }: TransactionTableProps
             <option value="all">All Types</option>
             <option value="ADD">Add Only</option>
             <option value="DEDUCT">Deduct Only</option>
+            <option value="BOOKING">Booking Only</option>
             <option value="NEW_USER">New Users</option>
           </select>
         </div>

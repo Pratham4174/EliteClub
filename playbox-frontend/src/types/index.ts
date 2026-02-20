@@ -31,7 +31,7 @@ export interface ScanResponse {
     id: number;
     userId: number;
     userName: string | null;
-    type: 'ADD' | 'DEDUCT' | 'NEW_USER';
+    type: 'ADD' | 'DEDUCT' | 'BOOKING' | 'NEW_USER';
     amount: number;
     description?: string; // Add this line - make it optional
     timestamp: string;
@@ -45,7 +45,7 @@ export interface ScanResponse {
     adminName?: string;
     startDate?: string;  // Format: YYYY-MM-DD
     endDate?: string;    // Format: YYYY-MM-DD
-    type?: 'ADD' | 'DEDUCT' | 'NEW_USER';
+    type?: 'ADD' | 'DEDUCT' | 'BOOKING' | 'NEW_USER';
   }
   // Add PageResponse type
 export interface PageResponse<T> {

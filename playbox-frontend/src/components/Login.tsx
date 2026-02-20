@@ -1,5 +1,5 @@
 import { Eye, EyeOff, Gamepad2, Loader2, Shield, Smartphone, UserCog, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import "../css/login.css";
@@ -29,6 +29,18 @@ export default function Login({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (adminEnabled && mode === "ADMIN") {
+      document.body.classList.add("admin-theme");
+    } else {
+      document.body.classList.remove("admin-theme");
+    }
+
+    return () => {
+      document.body.classList.remove("admin-theme");
+    };
+  }, [adminEnabled, mode]);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
