@@ -583,7 +583,8 @@ export default function App() {
       try {
         setBookingNotificationsLoading(true);
         const data = await api.getBookingNotifications();
-        setBookingNotifications(Array.isArray(data) ? data : []);
+        const unseenOnly = Array.isArray(data) ? data.filter((item) => !item.seen) : [];
+        setBookingNotifications(unseenOnly);
       } catch (error) {
         console.error("Failed to load booking notifications:", error);
       } finally {
@@ -647,9 +648,7 @@ export default function App() {
   const handleMarkNotificationSeen = async (id: number) => {
     try {
       await api.markBookingNotificationSeen(id);
-      setBookingNotifications((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, seen: true } : item))
-      );
+      setBookingNotifications((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
       console.error("Failed to mark notification as seen:", error);
     }
@@ -835,63 +834,6 @@ export default function App() {
               {status.text}
             </span>
           </div>
-
-          {!isAdminView && (
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div style={{ padding: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <h3 className="section-title" style={{ marginBottom: 0, display: "flex", alignItems: "center", gap: 8 }}>
-                    <Bell size={18} />
-                    Booking Notifications
-                  </h3>
-                  <button
-                    onClick={loadBookingNotifications}
-                    disabled={bookingNotificationsLoading}
-                    className="btn btn-outline"
-                  >
-                    {bookingNotificationsLoading ? "Loading..." : "Refresh"}
-                  </button>
-                </div>
-
-                {bookingNotifications.length === 0 ? (
-                  <p style={{ color: "#6b7280", margin: 0 }}>No booking notifications yet.</p>
-                ) : (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {bookingNotifications.slice(0, 10).map((item) => (
-                      <div
-                        key={item.id}
-                        style={{
-                          border: "1px solid #e5e7eb",
-                          borderRadius: 10,
-                          padding: 10,
-                          background: item.seen ? "#ffffff" : "#f0f9ff",
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                          <div>
-                            <div style={{ fontWeight: 600, color: "#111827" }}>{item.userName} ({item.userPhone})</div>
-                            <div style={{ color: "#374151", fontSize: 14 }}>
-                              {item.sportName} | {item.slotDate} | {formatSlotRange(item.startTime, item.endTime)}
-                            </div>
-                            <div style={{ color: "#6b7280", fontSize: 12, marginTop: 4 }}>{item.createdAt}</div>
-                          </div>
-                          {!item.seen && (
-                            <button
-                              onClick={() => handleMarkNotificationSeen(item.id)}
-                              className="btn btn-primary"
-                              style={{ height: 34, padding: "0 12px" }}
-                            >
-                              Mark Seen
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Admin Panel */}
           {isAdminView ? (
@@ -1314,6 +1256,63 @@ export default function App() {
                 </div>
               )}
             </>
+          )}
+
+          {!isAdminView && (
+            <div className="card" style={{ marginBottom: 16 }}>
+              <div style={{ padding: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <h3 className="section-title" style={{ marginBottom: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                    <Bell size={18} />
+                    Booking Notifications
+                  </h3>
+                  <button
+                    onClick={loadBookingNotifications}
+                    disabled={bookingNotificationsLoading}
+                    className="btn btn-outline"
+                  >
+                    {bookingNotificationsLoading ? "Loading..." : "Refresh"}
+                  </button>
+                </div>
+
+                {bookingNotifications.length === 0 ? (
+                  <p style={{ color: "#6b7280", margin: 0 }}>No booking notifications yet.</p>
+                ) : (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {bookingNotifications.slice(0, 10).map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 10,
+                          padding: 10,
+                          background: item.seen ? "#ffffff" : "#f0f9ff",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                          <div>
+                            <div style={{ fontWeight: 600, color: "#111827" }}>{item.userName} ({item.userPhone})</div>
+                            <div style={{ color: "#374151", fontSize: 14 }}>
+                              {item.sportName} | {item.slotDate} | {formatSlotRange(item.startTime, item.endTime)}
+                            </div>
+                            <div style={{ color: "#6b7280", fontSize: 12, marginTop: 4 }}>{item.createdAt}</div>
+                          </div>
+                          {!item.seen && (
+                            <button
+                              onClick={() => handleMarkNotificationSeen(item.id)}
+                              className="btn btn-primary"
+                              style={{ height: 34, padding: "0 12px" }}
+                            >
+                              Mark Seen
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
         

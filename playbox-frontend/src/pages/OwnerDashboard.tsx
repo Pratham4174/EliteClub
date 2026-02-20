@@ -1,6 +1,7 @@
 import type { DailyRevenueDashboard, Transaction } from "@/types";
 import {
     BarChart3,
+    ArrowLeft,
     Calendar,
     CreditCard,
     Download,
@@ -332,6 +333,13 @@ const handleFilter = useCallback(async (filters: FilterState) => {
         
         
         <div className="header-actions">
+        <button
+    onClick={() => navigate('/dashboard')}
+    className="btn btn-outline"
+  >
+    <ArrowLeft size={18} />
+    Back
+  </button>
         <button 
     onClick={() => navigate('/users')}
     className="btn btn-outline"
