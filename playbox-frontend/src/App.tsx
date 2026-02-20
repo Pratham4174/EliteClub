@@ -78,14 +78,6 @@ export default function App() {
   const [overviewDate, setOverviewDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [dayOverview, setDayOverview] = useState<AdminSportDayOverview | null>(null);
-  const [manualBookingName, setManualBookingName] = useState("");
-  const [manualBookingPhone, setManualBookingPhone] = useState("");
-  const [manualBookingSportId, setManualBookingSportId] = useState<number | "">("");
-  const [manualBookingDate, setManualBookingDate] = useState<string>(new Date().toISOString().slice(0, 10));
-  const [manualBookingSlots, setManualBookingSlots] = useState<Slot[]>([]);
-  const [manualBookingSlotId, setManualBookingSlotId] = useState<number | "">("");
-  const [manualSlotLoading, setManualSlotLoading] = useState(false);
-  const [manualBookingLoading, setManualBookingLoading] = useState(false);
   const [bookingNotifications, setBookingNotifications] = useState<BookingNotification[]>([]);
   const [bookingNotificationsLoading, setBookingNotificationsLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -188,27 +180,22 @@ export default function App() {
   }, [showDeductModal, requiresSlotSelection, deductSportId, slotDate]);
 
   useEffect(() => {
-    if (!isAdminView || manualBookingSportId === "") {
-      setManualBookingSlots([]);
-      setManualBookingSlotId("");
-      return;
-    }
-
-    setManualSlotLoading(true);
-    api.getSlots(Number(manualBookingSportId), manualBookingDate)
-      .then((data) => setManualBookingSlots(Array.isArray(data) ? data : []))
-      .catch((error) => {
-        console.error("Failed to load manual booking slots:", error);
-        setManualBookingSlots([]);
-      })
-      .finally(() => setManualSlotLoading(false));
-  }, [isAdminView, manualBookingSportId, manualBookingDate]);
-
-  useEffect(() => {
     if (!isAdminView) {
       return;
     }
-    loadBookingNotifications();
+    const fetchNotifications = async () => {
+      try {
+        setBookingNotificationsLoading(true);
+        const data = await api.getBookingNotifications();
+        setBookingNotifications(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to load booking notifications:", error);
+      } finally {
+        setBookingNotificationsLoading(false);
+      }
+    };
+
+    fetchNotifications();
   }, [isAdminView]);
 
   if (loading) {
@@ -573,49 +560,6 @@ export default function App() {
       setDayOverview(null);
     } finally {
       setOverviewLoading(false);
-    }
-  };
-
-  const handleManualSlotBooking = async () => {
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!manualBookingName.trim()) {
-      setStatus({ text: "Name is required for manual booking", type: "warning" });
-      return;
-    }
-    if (!phoneRegex.test(manualBookingPhone.trim())) {
-      setStatus({ text: "Enter valid 10-digit phone number", type: "warning" });
-      return;
-    }
-    if (manualBookingSportId === "") {
-      setStatus({ text: "Please select sport/court", type: "warning" });
-      return;
-    }
-    if (manualBookingSlotId === "") {
-      setStatus({ text: "Please select a slot", type: "warning" });
-      return;
-    }
-
-    try {
-      setManualBookingLoading(true);
-      await api.adminManualBookSlot({
-        name: manualBookingName.trim(),
-        phone: manualBookingPhone.trim(),
-        slotId: Number(manualBookingSlotId),
-      });
-
-      setStatus({ text: "Manual slot booking completed and SMS sent.", type: "success" });
-
-      const refreshedSlots = await api.getSlots(Number(manualBookingSportId), manualBookingDate);
-      setManualBookingSlots(Array.isArray(refreshedSlots) ? refreshedSlots : []);
-      setManualBookingSlotId("");
-
-      if (overviewSportId === manualBookingSportId && overviewDate === manualBookingDate) {
-        loadDayOverview();
-      }
-    } catch (error: any) {
-      setStatus({ text: `Error: ${error.message || "Manual booking failed"}`, type: "error" });
-    } finally {
-      setManualBookingLoading(false);
     }
   };
 
@@ -1015,76 +959,6 @@ export default function App() {
                   </button>
                 </div>
               )}
-
-              <div className="card" style={{ marginTop: 16 }}>
-                <div style={{ padding: 16 }}>
-                  <h3 className="section-title" style={{ marginBottom: 12 }}>
-                    Manual Slot Booking (No Card User)
-                  </h3>
-                  <p style={{ marginBottom: 12, color: "#6b7280" }}>
-                    Admin can block slot for users without card by entering name and phone.
-                  </p>
-                  <div className="admin-overview-controls" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                    <input
-                      className="input-field"
-                      placeholder="Name"
-                      value={manualBookingName}
-                      onChange={(e) => setManualBookingName(e.target.value)}
-                      style={{ minWidth: 220 }}
-                    />
-                    <input
-                      className="input-field"
-                      placeholder="Phone (10-digit)"
-                      value={manualBookingPhone}
-                      onChange={(e) => setManualBookingPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                      style={{ minWidth: 180 }}
-                    />
-                    <select
-                      value={manualBookingSportId}
-                      onChange={(e) => setManualBookingSportId(e.target.value ? Number(e.target.value) : "")}
-                      className="input-field"
-                      style={{ minWidth: 220 }}
-                    >
-                      <option value="">Select Sport/Court</option>
-                      {sports.map((sport) => (
-                        <option key={sport.id} value={sport.id}>
-                          {sport.name} - {sport.courtName}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="date"
-                      value={manualBookingDate}
-                      onChange={(e) => setManualBookingDate(e.target.value)}
-                      className="input-field"
-                      min={new Date().toISOString().slice(0, 10)}
-                    />
-                    <select
-                      value={manualBookingSlotId}
-                      onChange={(e) => setManualBookingSlotId(e.target.value ? Number(e.target.value) : "")}
-                      className="input-field"
-                      style={{ minWidth: 240 }}
-                      disabled={manualBookingSportId === "" || manualSlotLoading}
-                    >
-                      <option value="">{manualSlotLoading ? "Loading slots..." : "Select Slot"}</option>
-                      {manualBookingSlots
-                        .filter((slot) => !slot.booked && isPresentOrFutureSlot(manualBookingDate, slot.startTime, slot.endTime))
-                        .map((slot) => (
-                          <option key={slot.id} value={slot.id}>
-                            {formatSlotRange(slot.startTime, slot.endTime)}
-                          </option>
-                        ))}
-                    </select>
-                    <button
-                      onClick={handleManualSlotBooking}
-                      disabled={manualBookingLoading}
-                      className="btn btn-primary"
-                    >
-                      {manualBookingLoading ? "Booking..." : "Book Slot"}
-                    </button>
-                  </div>
-                </div>
-              </div>
 
               <div className="card" style={{ marginTop: 16 }}>
                 <div style={{ padding: 16 }}>
