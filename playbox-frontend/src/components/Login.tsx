@@ -288,7 +288,7 @@ export default function Login({
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
                     disabled={loading}
                   />
-                  <p className="text-sm text-gray-400 mt-1 text-center">
+                  <p className="text-sm mt-1 text-center" style={{ color: "#ffffff" }}>
                     OTP sent to +91 {phone} (Valid for 5 minutes)
                   </p>
                 </div>
