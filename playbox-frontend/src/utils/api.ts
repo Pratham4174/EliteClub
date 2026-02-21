@@ -83,8 +83,23 @@ bookSlot: async (
   );
 
   if (!res.ok) {
-    const error = await res.text();
-    throw new Error(error || "Booking failed");
+    const raw = await res.text().catch(() => "");
+    let message = raw || "Booking failed";
+    try {
+      const parsed = JSON.parse(raw);
+      message = parsed?.message || parsed?.error || message;
+    } catch {
+      // non-json response
+    }
+    const normalized = String(message).toLowerCase();
+    if (
+      res.status === 409 ||
+      normalized.includes("already booked") ||
+      normalized.includes("slot already booked")
+    ) {
+      throw new Error("Slot already booked");
+    }
+    throw new Error(message);
   }
 
   return await res.json();

@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import com.example.playbox.dto.AdminSportDayOverviewDTO;
 import com.example.playbox.dto.AdminManualBookingRequest;
@@ -37,14 +39,31 @@ public class BookingController {
             request.getSlotId() == null ||
             request.getPaymentMode() == null) {
 
-            throw new RuntimeException("Invalid booking request");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid booking request");
         }
 
-        return bookingService.bookSlot(
-                request.getUserId(),
-                request.getSlotId(),
-                request.getPaymentMode()
-        );
+        try {
+            return bookingService.bookSlot(
+                    request.getUserId(),
+                    request.getSlotId(),
+                    request.getPaymentMode()
+            );
+        } catch (Exception ex) {
+            String msg = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
+            if (msg.contains("already booked")
+                    || msg.contains("lock wait timeout")
+                    || msg.contains("deadlock")
+                    || msg.contains("pessimistic")) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Slot already booked");
+            }
+            if (msg.contains("insufficient balance")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient balance");
+            }
+            if (msg.contains("elite card")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Get your Elite Card Now to reserve slots");
+            }
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Booking failed");
+        }
     }
 
     @PostMapping("/admin/manual-book")
