@@ -4,7 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "../utils/api";
-import { formatSlotRange } from "../utils/formatters";
+import { formatSlotRange, isPresentOrFutureSlot } from "../utils/formatters";
 import type { SlotDetails, Sport, UserDetails } from "../types";
 
 interface Booking {
@@ -63,9 +63,16 @@ const FOOTER_MODAL_CONTENT: Record<FooterInfoKey, { title: string; lines: string
   },
 };
 
+const OFFERS = [
+  "Recharge for 3000 and get 3500 in EliteCard wallet.",
+  "Recharge for 5000 and get 6000 in EliteCard wallet.",
+  "Recharge for 10000 and get 12000 in EliteCard wallet.",
+];
+
 export default function PlayerHome() {
   const navigate = useNavigate();
   const accountCardRef = useRef<HTMLDivElement | null>(null);
+  const [offerIndex, setOfferIndex] = useState(0);
   const [sessionUser, setSessionUser] = useState<PlayerSession | null>(null);
   const [profile, setProfile] = useState<UserDetails | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -110,18 +117,16 @@ export default function PlayerHome() {
         });
         setSportsById(sportsMap);
 
-        // Fetch slot details only for recent bookings shown on dashboard to reduce load time.
-        const recentBookingSlotIds = Array.from(
+        // Fetch slot details for all bookings so active booking count stays accurate.
+        const bookingSlotIds = Array.from(
           new Set(
             [...normalizedBookings]
-              .sort((a, b) => b.id - a.id)
-              .slice(0, 6)
               .map((booking) => booking.slotId)
               .filter((id) => typeof id === "number")
           )
         );
         const slotDetails = await Promise.all(
-          recentBookingSlotIds.map(async (slotId) => {
+          bookingSlotIds.map(async (slotId) => {
             try {
               return await api.getSlotById(slotId);
             } catch {
@@ -153,9 +158,22 @@ export default function PlayerHome() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setOfferIndex((prev) => (prev + 1) % OFFERS.length);
+    }, 3200);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const activeBookings = useMemo(
-    () => bookings.filter((booking) => booking.status === "CONFIRMED").length,
-    [bookings]
+    () =>
+      bookings.filter((booking) => {
+        if (booking.status !== "CONFIRMED") return false;
+        const slot = slotById[booking.slotId];
+        if (!slot) return false;
+        return isPresentOrFutureSlot(slot.slotDate, slot.startTime, slot.endTime);
+      }).length,
+    [bookings, slotById]
   );
 
   const totalSpent = useMemo(
@@ -360,6 +378,55 @@ export default function PlayerHome() {
         )}
 
         <div
+          style={{
+            marginTop: 16,
+            background: "linear-gradient(135deg, #0f172a 0%, #111827 45%, #1f2937 100%)",
+            border: "1px solid #334155",
+            borderRadius: 14,
+            padding: 16,
+            color: "#ffffff",
+            boxShadow: "0 10px 24px rgba(15, 23, 42, 0.2)",
+          }}
+        >
+          <div style={{ fontSize: 13, letterSpacing: 0.7, color: "#cbd5e1", marginBottom: 8, fontWeight: 700 }}>
+            ELITECLUB OFFERS
+          </div>
+          <div style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.35, minHeight: 60 }}>
+            {OFFERS[offerIndex]}
+          </div>
+          <div style={{ marginTop: 10, display: "flex", gap: 6 }}>
+            {OFFERS.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setOfferIndex(idx)}
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  border: "none",
+                  cursor: "pointer",
+                  background: idx === offerIndex ? "#ffffff" : "rgba(255,255,255,0.35)",
+                }}
+                aria-label={`Show offer ${idx + 1}`}
+              />
+            ))}
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              borderTop: "1px solid rgba(148, 163, 184, 0.3)",
+              paddingTop: 10,
+              color: "#e2e8f0",
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            For now only offline recharge. Contact the Manager for recharge: <span style={{ color: "#ffffff" }}>9094000015</span>
+          </div>
+        </div>
+
+        <div
           ref={accountCardRef}
           style={{ marginTop: 16, background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 16, boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)" }}
         >
@@ -419,6 +486,23 @@ export default function PlayerHome() {
             </div>
           </div>
         </div>
+
+        {!sessionUser.cardUid && (
+          <div
+            style={{
+              marginTop: 12,
+              border: "1px solid #fecaca",
+              background: "#fff1f2",
+              color: "#9f1239",
+              borderRadius: 12,
+              padding: "10px 12px",
+              fontWeight: 700,
+              fontSize: 13,
+            }}
+          >
+            Get your card offline at Venue.
+          </div>
+        )}
 
         <div
           style={{

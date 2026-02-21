@@ -46,7 +46,17 @@ public class AuthController {
         record.setCreatedAt(java.time.Instant.now().toString());
 
         otpRepository.save(record);
-        twilioSmsService.sendOtp(phone, otp);
+        try {
+            twilioSmsService.sendOtp(phone, otp);
+        } catch (Exception ex) {
+            String message = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase(Locale.ROOT);
+            if (message.contains("unverified") || message.contains("trial")) {
+                throw new RuntimeException(
+                        "Twilio trial account can send OTP only to verified numbers. Verify this number in Twilio Console or upgrade Twilio account."
+                );
+            }
+            throw new RuntimeException("Failed to send OTP: " + ex.getMessage());
+        }
         return "OTP sent successfully";
     }
 
