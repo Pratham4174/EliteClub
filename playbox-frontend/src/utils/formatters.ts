@@ -97,15 +97,34 @@ export const isPresentOrFutureSlot = (
   if (!selectedDate || !startTime24 || !endTime24) return true;
 
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate()
+  ).padStart(2, "0")}`;
 
   if (selectedDate > todayStr) return true;
   if (selectedDate < todayStr) return false;
 
+  const [startHour, startMinute] = startTime24.split(":").map((p) => Number(p));
   const [endHour, endMinute] = endTime24.split(":").map((p) => Number(p));
-  if (Number.isNaN(endHour) || Number.isNaN(endMinute)) return true;
+  if (
+    Number.isNaN(startHour) ||
+    Number.isNaN(startMinute) ||
+    Number.isNaN(endHour) ||
+    Number.isNaN(endMinute)
+  ) {
+    return true;
+  }
+
+  const slotStart = new Date(now);
+  slotStart.setHours(startHour, startMinute, 0, 0);
 
   const slotEnd = new Date(now);
   slotEnd.setHours(endHour, endMinute, 0, 0);
+
+  // Handle slots crossing midnight (e.g. 23:00 -> 00:00 next day).
+  if (slotEnd.getTime() <= slotStart.getTime()) {
+    slotEnd.setDate(slotEnd.getDate() + 1);
+  }
+
   return slotEnd.getTime() > now.getTime();
 };

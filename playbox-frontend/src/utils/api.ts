@@ -99,6 +99,9 @@ bookSlot: async (
     ) {
       throw new Error("Slot already booked");
     }
+    if (normalized.includes("insufficient balance")) {
+      throw new Error("Insufficient wallet balance for this booking");
+    }
     throw new Error(message);
   }
 
