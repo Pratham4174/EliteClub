@@ -1,0 +1,750 @@
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Sora:wght@500;700&display=swap");
+
+.splash-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #000;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  opacity: 1;
+  transition: none;
+}
+
+.splash-root.splash-fade {
+  opacity: 1;
+}
+
+.splash-root.splash-fade .splash-content {
+  opacity: 0;
+  transform: translateY(-12px) scale(0.98);
+  filter: blur(2px);
+  transition: opacity 520ms ease, transform 520ms ease, filter 520ms ease;
+}
+
+.splash-root.splash-fade .splash-bg-glow {
+  opacity: 0.25;
+  transform: scale(1.12);
+  transition: opacity 520ms ease, transform 520ms ease;
+}
+
+.splash-bg-glow {
+  position: absolute;
+  width: 70vmin;
+  height: 70vmin;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 38%, rgba(0, 0, 0, 0) 68%);
+  filter: blur(8px);
+  animation: bgPulse 2.8s ease-in-out 1 forwards;
+}
+
+:root {
+  --splash-seq: 3.3s;
+}
+
+.splash-content {
+  position: relative;
+  width: min(92vw, 700px);
+  padding: 24px 20px 16px;
+  text-align: center;
+}
+
+.splash-title {
+  margin: 0;
+  font-family: "Rajdhani", "Sora", sans-serif;
+  font-size: clamp(48px, 10vw, 92px);
+  line-height: 0.95;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+  display: inline-flex;
+  gap: 0.02em;
+}
+
+.splash-title span {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: titleIn 720ms ease forwards;
+}
+
+.splash-title span:nth-child(1) { animation-delay: 80ms; }
+.splash-title span:nth-child(2) { animation-delay: 125ms; }
+.splash-title span:nth-child(3) { animation-delay: 170ms; }
+.splash-title span:nth-child(4) { animation-delay: 215ms; }
+.splash-title span:nth-child(5) { animation-delay: 260ms; }
+.splash-title span:nth-child(6) { animation-delay: 305ms; }
+.splash-title span:nth-child(7) { animation-delay: 350ms; }
+.splash-title span:nth-child(8) { animation-delay: 395ms; }
+.splash-title span:nth-child(9) { animation-delay: 440ms; }
+
+.sports-stage {
+  margin: 26px auto 0;
+  width: min(84vw, 560px);
+  height: 200px;
+  position: relative;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  animation: sceneVisibility var(--splash-seq) linear 1 forwards;
+}
+
+.scene-cricket { animation-delay: 0ms; }
+.scene-pickle { animation-delay: 0ms; }
+.scene-swim { animation-delay: 0ms; }
+
+/* Cricket */
+.cricket-player {
+  position: absolute;
+  left: 26%;
+  top: 40%;
+  width: 92px;
+  height: 110px;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.45));
+}
+
+.cricket-head {
+  position: absolute;
+  left: 30px;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.cricket-neck {
+  position: absolute;
+  left: 36px;
+  top: 14px;
+  width: 4px;
+  height: 6px;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.cricket-body {
+  position: absolute;
+  left: 30px;
+  top: 14px;
+  width: 16px;
+  height: 40px;
+  border-radius: 12px 12px 10px 10px;
+  background: #fff;
+}
+
+.cricket-hip {
+  position: absolute;
+  left: 31px;
+  top: 50px;
+  width: 14px;
+  height: 9px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.cricket-front-arm {
+  position: absolute;
+  left: 40px;
+  top: 22px;
+  width: 30px;
+  height: 6px;
+  border-radius: 8px;
+  background: #fff;
+  transform: rotate(-20deg);
+}
+
+.cricket-back-arm {
+  position: absolute;
+  left: 14px;
+  top: 22px;
+  width: 24px;
+  height: 6px;
+  border-radius: 8px;
+  background: #fff;
+  transform: rotate(40deg);
+}
+
+.cricket-leg {
+  position: absolute;
+  width: 6px;
+  height: 34px;
+  border-radius: 8px;
+  background: #fff;
+  top: 54px;
+}
+
+.cricket-leg-front {
+  left: 33px;
+  transform: rotate(22deg);
+}
+
+.cricket-leg-back {
+  left: 41px;
+  transform: rotate(-18deg);
+}
+
+.cricket-wickets {
+  position: absolute;
+  left: 21%;
+  top: 64%;
+  width: 18px;
+  height: 40px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.cricket-wickets span {
+  width: 3px;
+  height: 100%;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.cricket-bat {
+  position: absolute;
+  left: 40%;
+  top: 49%;
+  width: 14px;
+  height: 94px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ececec 0%, #bdbdbd 100%);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.55);
+  transform-origin: 50% 88%;
+  transform: rotate(18deg);
+  animation: batSwing var(--splash-seq) linear 1 forwards;
+}
+
+.cricket-ball {
+  position: absolute;
+  left: 44%;
+  top: 60%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 9px rgba(255, 255, 255, 0.75);
+  animation: ballFly var(--splash-seq) linear 1 forwards;
+}
+
+.cricket-shot-trail {
+  position: absolute;
+  left: 45%;
+  top: 58%;
+  width: 130px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.15));
+  transform: rotate(-18deg);
+  transform-origin: left center;
+  opacity: 0;
+  animation: cricketTrail var(--splash-seq) linear 1 forwards;
+}
+
+/* Pickleball */
+.pickle-net {
+  position: absolute;
+  left: 16%;
+  top: 58%;
+  width: 68%;
+  height: 30px;
+  border-top: 3px solid rgba(255, 255, 255, 0.95);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.42) 0px,
+      rgba(255, 255, 255, 0.42) 1px,
+      transparent 1px,
+      transparent 5px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.32) 0px,
+      rgba(255, 255, 255, 0.32) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+  opacity: 0.92;
+}
+
+.pickle-net::before,
+.pickle-net::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  width: 4px;
+  height: 44px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+.pickle-net::before { left: -2px; }
+.pickle-net::after { right: -2px; }
+
+.pickle-net-base {
+  position: absolute;
+  left: 14%;
+  top: 72%;
+  width: 72%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.2));
+  opacity: 0.8;
+}
+
+.pickle-player {
+  position: absolute;
+  left: 28%;
+  top: 39%;
+  width: 118px;
+  height: 118px;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.45));
+}
+
+.player-head {
+  position: absolute;
+  left: 26px;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.player-neck {
+  position: absolute;
+  left: 32px;
+  top: 15px;
+  width: 4px;
+  height: 6px;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.player-body {
+  position: absolute;
+  left: 26px;
+  top: 16px;
+  width: 16px;
+  height: 40px;
+  border-radius: 12px 12px 10px 10px;
+  background: #fff;
+}
+
+.player-hip {
+  position: absolute;
+  left: 27px;
+  top: 53px;
+  width: 14px;
+  height: 9px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.player-arm {
+  position: absolute;
+  left: 38px;
+  top: 22px;
+  width: 36px;
+  height: 6px;
+  border-radius: 8px;
+  background: #fff;
+  transform-origin: left center;
+  animation: pickleSwing var(--splash-seq) linear 1 forwards;
+}
+
+.player-leg {
+  position: absolute;
+  width: 6px;
+  height: 30px;
+  background: #fff;
+  border-radius: 6px;
+  top: 43px;
+}
+
+.player-leg-a { left: 29px; transform: rotate(14deg); }
+.player-leg-b { left: 37px; transform: rotate(-12deg); }
+
+.pickle-paddle {
+  position: absolute;
+  left: 66px;
+  top: 14px;
+  width: 20px;
+  height: 30px;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  transform-origin: 10% 80%;
+  animation: paddleSwing var(--splash-seq) linear 1 forwards;
+}
+
+.pickle-ball {
+  position: absolute;
+  left: 57%;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+  animation: pickleBallFly var(--splash-seq) linear 1 forwards;
+}
+
+.pickle-trail {
+  position: absolute;
+  left: 57%;
+  top: 50%;
+  width: 116px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.12));
+  transform: rotate(-14deg);
+  transform-origin: left center;
+  opacity: 0;
+  animation: pickleTrail var(--splash-seq) linear 1 forwards;
+}
+
+/* Swimming */
+.swim-trail {
+  position: absolute;
+  left: 30%;
+  top: 58%;
+  width: 110px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.15));
+  animation: trailFlow var(--splash-seq) linear 1 forwards;
+}
+
+.pool-lane {
+  position: absolute;
+  left: 16%;
+  bottom: 16px;
+  width: 68%;
+  height: 44px;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.45) 0px,
+      rgba(255, 255, 255, 0.45) 8px,
+      rgba(255, 255, 255, 0.2) 8px,
+      rgba(255, 255, 255, 0.2) 16px
+    );
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  opacity: 0;
+  animation: poolLanePulse var(--splash-seq) linear 1 forwards;
+}
+
+.swimmer {
+  position: absolute;
+  left: 30%;
+  top: 48%;
+  width: 150px;
+  height: 78px;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.45));
+}
+
+.swimmer-head {
+  position: absolute;
+  left: 24px;
+  top: 18px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.swimmer-neck {
+  position: absolute;
+  left: 36px;
+  top: 27px;
+  width: 4px;
+  height: 5px;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.swimmer-body {
+  position: absolute;
+  left: 40px;
+  top: 28px;
+  width: 74px;
+  height: 12px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.swimmer-hip {
+  position: absolute;
+  left: 104px;
+  top: 29px;
+  width: 16px;
+  height: 10px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.swimmer-arm {
+  position: absolute;
+  width: 46px;
+  height: 5px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.swimmer-arm-front {
+  left: 56px;
+  top: 11px;
+  transform-origin: 8% 50%;
+  animation: freestyleArmFront var(--splash-seq) linear 1 forwards;
+}
+
+.swimmer-arm-back {
+  left: 68px;
+  top: 32px;
+  transform-origin: 8% 50%;
+  animation: freestyleArmBack var(--splash-seq) linear 1 forwards;
+}
+
+.swimmer-leg {
+  position: absolute;
+  width: 24px;
+  height: 4px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.swimmer-leg-a {
+  left: 116px;
+  top: 29px;
+  transform-origin: left center;
+  animation: swimmerKickA var(--splash-seq) linear 1 forwards;
+}
+
+.swimmer-leg-b {
+  left: 116px;
+  top: 35px;
+  transform-origin: left center;
+  animation: swimmerKickB var(--splash-seq) linear 1 forwards;
+}
+
+.water-splash {
+  position: absolute;
+  left: 57%;
+  bottom: 38px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  opacity: 0;
+  animation: splashPulse var(--splash-seq) linear 1 forwards;
+}
+
+.water-wave {
+  position: absolute;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+}
+
+.water-wave-a {
+  left: 22%;
+  bottom: 30px;
+  width: 58%;
+  animation: waterWaveA var(--splash-seq) linear 1 forwards;
+}
+
+.water-wave-b {
+  left: 28%;
+  bottom: 22px;
+  width: 46%;
+  animation: waterWaveB var(--splash-seq) linear 1 forwards;
+}
+
+.water-wave-c {
+  left: 20%;
+  bottom: 38px;
+  width: 52%;
+  animation: waterWaveC var(--splash-seq) linear 1 forwards;
+}
+
+.water-line {
+  position: absolute;
+  left: 18%;
+  bottom: 22px;
+  width: 64%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.2));
+  animation: waterPulse var(--splash-seq) linear 1 forwards;
+}
+
+@keyframes titleIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bgPulse {
+  0% { transform: scale(0.88); opacity: 0.45; }
+  50% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.07); opacity: 0.55; }
+}
+
+@keyframes sceneVisibility {
+  0% { opacity: 0; transform: translateY(8px) scale(0.98); }
+  7% { opacity: 1; transform: translateY(0) scale(1); }
+  30% { opacity: 1; transform: translateY(0) scale(1); }
+  36% { opacity: 0; transform: translateY(-6px) scale(1.02); }
+  100% { opacity: 0; }
+}
+
+.scene-cricket { animation-name: cricketScene; }
+.scene-pickle { animation-name: pickleScene; }
+.scene-swim { animation-name: swimScene; }
+
+@keyframes cricketScene {
+  0%, 2% { opacity: 0; }
+  5%, 30% { opacity: 1; transform: translateY(0) scale(1); }
+  33% { opacity: 0; transform: translateY(-4px) scale(1.01); }
+  100% { opacity: 0; }
+}
+
+@keyframes pickleScene {
+  0%, 31% { opacity: 0; }
+  36%, 64% { opacity: 1; transform: translateY(0) scale(1); }
+  68% { opacity: 0; transform: translateY(-4px) scale(1.01); }
+  100% { opacity: 0; }
+}
+
+@keyframes swimScene {
+  0%, 66% { opacity: 0; }
+  71%, 96% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; }
+}
+
+@keyframes batSwing {
+  0%, 8% { transform: rotate(20deg); }
+  16% { transform: rotate(-50deg); }
+  30% { transform: rotate(-42deg); }
+  100% { transform: rotate(-42deg); }
+}
+
+@keyframes ballFly {
+  0%, 10% { transform: translate(0, 0) scale(0.98); opacity: 0.95; }
+  20% { transform: translate(70px, -34px) scale(1); opacity: 1; }
+  32% { transform: translate(154px, -52px) scale(0.7); opacity: 0; }
+  100% { transform: translate(154px, -52px) scale(0.7); opacity: 0; }
+}
+
+@keyframes cricketTrail {
+  0%, 13% { opacity: 0; transform: rotate(-18deg) scaleX(0.4); }
+  20% { opacity: 1; transform: rotate(-18deg) scaleX(1); }
+  32% { opacity: 0; transform: rotate(-18deg) scaleX(1.1); }
+  100% { opacity: 0; }
+}
+
+@keyframes pickleSwing {
+  0%, 36% { transform: rotate(8deg); }
+  48% { transform: rotate(-30deg); }
+  64% { transform: rotate(-20deg); }
+  100% { transform: rotate(-20deg); }
+}
+
+@keyframes paddleSwing {
+  0%, 36% { transform: rotate(10deg); }
+  48% { transform: rotate(-38deg); }
+  64% { transform: rotate(-22deg); }
+  100% { transform: rotate(-22deg); }
+}
+
+@keyframes pickleBallFly {
+  0%, 40% { transform: translate(0, 0) scale(0.98); opacity: 1; }
+  52% { transform: translate(62px, -18px) scale(1); opacity: 1; }
+  68% { transform: translate(138px, -42px) scale(0.68); opacity: 0; }
+  100% { transform: translate(138px, -42px) scale(0.68); opacity: 0; }
+}
+
+@keyframes pickleTrail {
+  0%, 46% { opacity: 0; transform: rotate(-14deg) scaleX(0.45); }
+  56% { opacity: 1; transform: rotate(-14deg) scaleX(1); }
+  68% { opacity: 0; transform: rotate(-14deg) scaleX(1.08); }
+  100% { opacity: 0; }
+}
+
+@keyframes trailFlow {
+  0%, 69% { transform: scaleX(0.25); opacity: 0; transform-origin: left center; }
+  78% { transform: scaleX(1); opacity: 0.95; transform-origin: left center; }
+  100% { transform: scaleX(1.1); opacity: 0.2; transform-origin: left center; }
+}
+
+@keyframes freestyleArmFront {
+  0%, 72% { transform: rotate(18deg) translateX(0); }
+  84% { transform: rotate(-34deg) translateX(6px); }
+  100% { transform: rotate(12deg) translateX(12px); }
+}
+
+@keyframes freestyleArmBack {
+  0%, 72% { transform: rotate(-22deg) translateX(0); }
+  84% { transform: rotate(22deg) translateX(-4px); }
+  100% { transform: rotate(-12deg) translateX(-8px); }
+}
+
+@keyframes swimmerKickA {
+  0%, 74% { transform: rotate(6deg); }
+  86% { transform: rotate(-12deg); }
+  100% { transform: rotate(4deg); }
+}
+
+@keyframes swimmerKickB {
+  0%, 74% { transform: rotate(-6deg); }
+  86% { transform: rotate(12deg); }
+  100% { transform: rotate(-4deg); }
+}
+
+@keyframes waterPulse {
+  0%, 70% { opacity: 0; transform: scaleX(0.75); }
+  84% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0.35; transform: scaleX(1.06); }
+}
+
+@keyframes splashPulse {
+  0%, 74% { opacity: 0; transform: scale(0.45); }
+  84% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+
+@keyframes waterWaveA {
+  0%, 72% { opacity: 0; transform: translateX(0); }
+  84% { opacity: 0.95; transform: translateX(6px) scaleX(1.02); }
+  100% { opacity: 0.45; transform: translateX(16px) scaleX(1.08); }
+}
+
+@keyframes waterWaveB {
+  0%, 74% { opacity: 0; transform: translateX(0); }
+  86% { opacity: 0.85; transform: translateX(4px) scaleX(1.02); }
+  100% { opacity: 0.35; transform: translateX(12px) scaleX(1.06); }
+}
+
+@keyframes waterWaveC {
+  0%, 76% { opacity: 0; transform: translateX(0); }
+  88% { opacity: 0.78; transform: translateX(5px) scaleX(1.03); }
+  100% { opacity: 0.3; transform: translateX(11px) scaleX(1.08); }
+}
+
+@keyframes poolLanePulse {
+  0%, 70% { opacity: 0; transform: scaleX(0.94); }
+  82% { opacity: 0.8; transform: scaleX(1); }
+  100% { opacity: 0.4; transform: scaleX(1.03); }
+}
+
+@media (max-width: 520px) {
+  .sports-stage {
+    height: 168px;
+  }
+}

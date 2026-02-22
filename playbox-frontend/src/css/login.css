@@ -12,6 +12,7 @@
   font-family: 'Inter', sans-serif;
   position: relative;
   overflow: hidden;
+  animation: loginFadeIn 420ms ease both;
 }
 
 .login-container::before {
@@ -28,6 +29,17 @@
 @keyframes float {
   0% { transform: translate(0, 0) rotate(0deg); }
   100% { transform: translate(30px, 30px) rotate(360deg); }
+}
+
+@keyframes loginFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-card {

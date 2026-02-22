@@ -3,6 +3,7 @@ import App from "./App";
 import Login from "./components/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import OwnerDashboard from "./pages/OwnerDashboard";
+import SplashScreen from "./pages/SplashScreen";
 
 import PlayerProtectedRoute from "./components/PlayerProtectedRoute";
 import MyBookings from "./pages/MyBookings";
@@ -17,6 +18,10 @@ export default function MainRouter() {
   return (
     <HashRouter>
       <Routes>
+
+        {/* Pre-login Splash */}
+        <Route path="/splash" element={<SplashScreen />} />
+        <Route path="/" element={<Navigate to="/splash" replace />} />
 
         {/* Login */}
         <Route path="/login" element={<Login adminEnabled={false} defaultMode="PLAYER" />} />
@@ -105,7 +110,7 @@ export default function MainRouter() {
 />
 
         {/* Default */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/splash" replace />} />
 
       </Routes>
     </HashRouter>
