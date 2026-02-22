@@ -182,8 +182,16 @@ export default function PlayerHome() {
   );
 
   const recentBookings = useMemo(
-    () => [...bookings].sort((a, b) => b.id - a.id).slice(0, 6),
-    [bookings]
+    () =>
+      [...bookings]
+        .filter((booking) => {
+          const slot = slotById[booking.slotId];
+          if (!slot) return false;
+          return isPresentOrFutureSlot(slot.slotDate, slot.startTime, slot.endTime);
+        })
+        .sort((a, b) => b.id - a.id)
+        .slice(0, 6),
+    [bookings, slotById]
   );
 
   const handleLogout = () => {

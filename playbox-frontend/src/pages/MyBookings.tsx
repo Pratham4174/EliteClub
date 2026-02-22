@@ -113,19 +113,26 @@ export default function MyBookings() {
 
   const isFutureBooking = (booking: Booking) => {
     const slot = slotById[booking.slotId];
-    if (!slot?.slotDate || !slot?.endTime) return false;
+    if (!slot?.slotDate || !slot?.startTime || !slot?.endTime) return false;
 
     const normalizedDate = (slot.slotDate.includes("T") ? slot.slotDate.split("T")[0] : slot.slotDate).trim();
     const dateMatch = normalizedDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!dateMatch) return false;
 
+    const startTimeParts = parseTimeTo24HourParts(slot.startTime);
     const endTimeParts = parseTimeTo24HourParts(slot.endTime);
-    if (!endTimeParts) return false;
+    if (!startTimeParts || !endTimeParts) return false;
 
     const year = Number.parseInt(dateMatch[1], 10);
     const monthIndex = Number.parseInt(dateMatch[2], 10) - 1;
     const day = Number.parseInt(dateMatch[3], 10);
+    const slotStart = new Date(year, monthIndex, day, startTimeParts.hour, startTimeParts.minute, 0, 0);
     const slotEnd = new Date(year, monthIndex, day, endTimeParts.hour, endTimeParts.minute, 0, 0);
+
+    // Handle slots crossing midnight (e.g. 23:00 -> 00:00 next day).
+    if (slotEnd.getTime() <= slotStart.getTime()) {
+      slotEnd.setDate(slotEnd.getDate() + 1);
+    }
 
     return slotEnd.getTime() > Date.now();
   };

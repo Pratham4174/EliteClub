@@ -1,7 +1,9 @@
 package com.example.playbox.controller;
 
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,36 +35,42 @@ public class BookingController {
 
     // 🔥 BOOK SLOT USING REQUEST BODY
     @PostMapping("/book")
-    public Booking book(@RequestBody BookingRequest request) {
+    public ResponseEntity<?> book(@RequestBody BookingRequest request) {
 
         if (request.getUserId() == null ||
             request.getSlotId() == null ||
             request.getPaymentMode() == null) {
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid booking request");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Invalid booking request"));
         }
 
         try {
-            return bookingService.bookSlot(
+            Booking booking = bookingService.bookSlot(
                     request.getUserId(),
                     request.getSlotId(),
                     request.getPaymentMode()
             );
+            return ResponseEntity.ok(booking);
         } catch (Exception ex) {
             String msg = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
             if (msg.contains("already booked")
                     || msg.contains("lock wait timeout")
                     || msg.contains("deadlock")
                     || msg.contains("pessimistic")) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Slot already booked");
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("message", "Slot already booked"));
             }
             if (msg.contains("insufficient balance")) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient balance");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Your wallet balance is insufficient"));
             }
             if (msg.contains("elite card")) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Get your Elite Card Now to reserve slots");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Get your Elite Card Now to reserve slots"));
             }
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Booking failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Booking failed"));
         }
     }
 
