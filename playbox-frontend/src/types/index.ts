@@ -158,6 +158,7 @@ export interface AdminSportDayOverview {
     slotDate: string;
     startTime: string;
     endTime: string;
+    remarks?: string;
     message: string;
     seen: boolean;
     createdAt: string;

@@ -107,7 +107,7 @@ bookSlot: async (
 
   return await res.json();
 },
-adminBlockSlot: async (payload: { name: string; phone: string; email?: string; slotId: number }) => {
+adminBlockSlot: async (payload: { name: string; phone: string; email?: string; remarks?: string; slotId: number }) => {
   const res = await fetch(
     `${BACKEND_URL}/api/bookings/admin/manual-book`,
     {

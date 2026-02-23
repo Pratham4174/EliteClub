@@ -24,8 +24,8 @@ public class BookingNotification {
     private String slotDate;
     private String startTime;
     private String endTime;
+    private String remarks;
     private String message;
     private Boolean seen;
     private String createdAt;
 }
-

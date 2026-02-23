@@ -37,6 +37,7 @@ public class BookingNotificationService {
         notification.setSlotDate(slot.getSlotDate());
         notification.setStartTime(slot.getStartTime());
         notification.setEndTime(slot.getEndTime());
+        notification.setRemarks(booking.getRemarks());
         notification.setSeen(false);
         notification.setCreatedAt(Instant.now().toString());
         notification.setMessage(
@@ -96,4 +97,3 @@ public class BookingNotificationService {
         return value == null ? "" : value;
     }
 }
-

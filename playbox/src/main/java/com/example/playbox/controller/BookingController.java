@@ -86,6 +86,7 @@ public class BookingController {
                 request.getName(),
                 request.getPhone(),
                 request.getEmail(),
+                request.getRemarks(),
                 request.getSlotId()
         );
     }

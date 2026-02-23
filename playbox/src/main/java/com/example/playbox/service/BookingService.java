@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -44,13 +45,14 @@ public class BookingService {
         // 1️⃣ Lock slot row
         Slot slot = slotRepository.findWithLockingById(slotId)
                 .orElseThrow(() -> new RuntimeException("Slot not found"));
-    
-        if (Boolean.TRUE.equals(slot.getBooked())) {
-            throw new RuntimeException("Slot already booked");
-        }
-    
+
         // 2️⃣ Get sport directly from slot
         Sport sport = slot.getSport();
+        boolean multiSlotSport = isMultiSlotSport(sport);
+
+        if (!multiSlotSport && Boolean.TRUE.equals(slot.getBooked())) {
+            throw new RuntimeException("Slot already booked");
+        }
     
         Float amount = sport.getPricePerHour();
         if (amount == null || amount <= 0f) {
@@ -91,8 +93,10 @@ public class BookingService {
         transactionRepository.save(txn);
     
         // 5️⃣ Mark slot booked
-        slot.setBooked(true);
-        slotRepository.save(slot);
+        if (!multiSlotSport) {
+            slot.setBooked(true);
+            slotRepository.save(slot);
+        }
     
         // 6️⃣ Save booking
         Booking booking = new Booking();
@@ -120,7 +124,7 @@ public class BookingService {
     }
 
     @Transactional
-    public Booking adminManualBookSlot(String name, String phone, String email, Long slotId) {
+    public Booking adminManualBookSlot(String name, String phone, String email, String remarks, Long slotId) {
         if (name == null || name.isBlank()) {
             throw new RuntimeException("Name is required");
         }
@@ -134,11 +138,13 @@ public class BookingService {
         Slot slot = slotRepository.findWithLockingById(slotId)
                 .orElseThrow(() -> new RuntimeException("Slot not found"));
 
-        if (Boolean.TRUE.equals(slot.getBooked())) {
+        Sport sport = slot.getSport();
+        boolean multiSlotSport = isMultiSlotSport(sport);
+
+        if (!multiSlotSport && Boolean.TRUE.equals(slot.getBooked())) {
             throw new RuntimeException("Slot already booked");
         }
 
-        Sport sport = slot.getSport();
         Float amount = sport.getPricePerHour();
         if (amount == null || amount <= 0f) {
             amount = 0f;
@@ -160,8 +166,10 @@ public class BookingService {
         }
         user = userRepository.save(user);
 
-        slot.setBooked(true);
-        slotRepository.save(slot);
+        if (!multiSlotSport) {
+            slot.setBooked(true);
+            slotRepository.save(slot);
+        }
 
         Booking booking = new Booking();
         booking.setUserId(user.getId());
@@ -170,6 +178,7 @@ public class BookingService {
         booking.setAmount(amount);
         booking.setStatus("CONFIRMED");
         booking.setPaymentMode("OFFLINE");
+        booking.setRemarks(remarks == null || remarks.isBlank() ? null : remarks.trim());
         booking.setCreatedAt(Instant.now().toString());
 
         Booking savedBooking = bookingRepository.save(booking);
@@ -262,6 +271,24 @@ public class BookingService {
         } catch (Exception ignored) {
             // Avoid failing booking transaction if SMS provider fails.
         }
+    }
+
+    private boolean isMultiSlotSport(Sport sport) {
+        if (sport == null) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(sport.getIsmuplislot())) {
+            return true;
+        }
+
+        String sportName = sport.getName() == null ? "" : sport.getName().trim().toLowerCase(Locale.ROOT);
+        boolean isSwimming = sportName.contains("swimming");
+        if (isSwimming) {
+            sport.setIsmuplislot(true);
+            sportRepository.save(sport);
+            return true;
+        }
+        return false;
     }
 
 

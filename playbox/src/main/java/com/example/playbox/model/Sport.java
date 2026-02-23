@@ -1,6 +1,7 @@
 package com.example.playbox.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -20,4 +21,7 @@ public class Sport {
     private String courtName;  // Turf1, Court1, Court2
     private Float pricePerHour;
     private Boolean active;
+
+    @Column(name = "ismuplislot", nullable = false, columnDefinition = "boolean default false")
+    private Boolean ismuplislot = false;
 }

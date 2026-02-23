@@ -22,11 +22,13 @@ import com.example.playbox.model.AdminUser;
 import com.example.playbox.model.Booking;
 import com.example.playbox.model.PlayBoxUser;
 import com.example.playbox.model.Slot;
+import com.example.playbox.model.Sport;
 import com.example.playbox.model.TransactionEntity;
 import com.example.playbox.repository.AdminUserRepository;
 import com.example.playbox.repository.BookingRepository;
 import com.example.playbox.repository.PlayBoxUserRepository;
 import com.example.playbox.repository.SlotRepository;
+import com.example.playbox.repository.SportRepository;
 import com.example.playbox.repository.TransactionRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,7 @@ public class UserServiceImpl {
     private final SlotRepository slotRepository;
     private final BookingRepository bookingRepository;
     private final AdminUserRepository adminUserRepository;
+    private final SportRepository sportRepository;
     private final TwilioSmsService twilioSmsService;
     private final BookingNotificationService bookingNotificationService;
 
@@ -110,8 +113,9 @@ public class UserServiceImpl {
         if (slotId != null) {
             Slot slot = slotRepository.findWithLockingById(slotId)
                     .orElseThrow(() -> new RuntimeException("Slot not found"));
+            boolean multiSlotSport = isMultiSlotSport(slot.getSport());
 
-            if (Boolean.TRUE.equals(slot.getBooked())) {
+            if (!multiSlotSport && Boolean.TRUE.equals(slot.getBooked())) {
                 throw new RuntimeException("Selected slot is already booked");
             }
 
@@ -128,8 +132,10 @@ public class UserServiceImpl {
             booking.setPaymentMode("WALLET");
             booking.setCreatedAt(Instant.now().toString());
 
-            slot.setBooked(true);
-            slotRepository.save(slot);
+            if (!multiSlotSport) {
+                slot.setBooked(true);
+                slotRepository.save(slot);
+            }
             Booking savedBooking = bookingRepository.save(booking);
             bookedSlot = slot;
             bookedSportName = slot.getSport() != null ? slot.getSport().getName() : null;
@@ -440,6 +446,24 @@ public class UserServiceImpl {
             return "";
         }
         return activity.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
+    private boolean isMultiSlotSport(Sport sport) {
+        if (sport == null) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(sport.getIsmuplislot())) {
+            return true;
+        }
+
+        String sportName = sport.getName() == null ? "" : sport.getName().trim().toLowerCase(Locale.ROOT);
+        boolean isSwimming = sportName.contains("swimming");
+        if (isSwimming) {
+            sport.setIsmuplislot(true);
+            sportRepository.save(sport);
+            return true;
+        }
+        return false;
     }
 
     public PlayBoxUser updateUser(PlayBoxUser user) {

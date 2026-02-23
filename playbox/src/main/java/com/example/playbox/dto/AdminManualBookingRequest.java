@@ -7,5 +7,6 @@ public class AdminManualBookingRequest {
     private String name;
     private String phone;
     private String email;
+    private String remarks;
     private Long slotId;
 }

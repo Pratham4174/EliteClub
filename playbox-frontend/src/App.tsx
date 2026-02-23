@@ -82,6 +82,7 @@ export default function App() {
   const [blockBookingName, setBlockBookingName] = useState("");
   const [blockBookingPhone, setBlockBookingPhone] = useState("");
   const [blockBookingEmail, setBlockBookingEmail] = useState("");
+  const [blockBookingRemarks, setBlockBookingRemarks] = useState("");
   const [blockBookingSportId, setBlockBookingSportId] = useState<number | "">("");
   const [blockBookingDate, setBlockBookingDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [blockBookingSlots, setBlockBookingSlots] = useState<Slot[]>([]);
@@ -90,6 +91,11 @@ export default function App() {
   const [blockSlotSubmitting, setBlockSlotSubmitting] = useState(false);
   const [bookingNotifications, setBookingNotifications] = useState<BookingNotification[]>([]);
   const [bookingNotificationsLoading, setBookingNotificationsLoading] = useState(false);
+  const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+  const [selectedBookingNotification, setSelectedBookingNotification] = useState<BookingNotification | null>(null);
+  const [showTodayBookingsModal, setShowTodayBookingsModal] = useState(false);
+  const [todayBookingsLoading, setTodayBookingsLoading] = useState(false);
+  const [todayBookings, setTodayBookings] = useState<BookingNotification[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [adminInfo, setAdminInfo] = useState<any>(null);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -593,11 +599,68 @@ export default function App() {
     })();
   }
 
+  const getLocalDateString = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const getTodayBookingStatus = (booking: BookingNotification) => {
+    const now = new Date();
+    const start = new Date(`${booking.slotDate}T${booking.startTime}`);
+    const end = new Date(`${booking.slotDate}T${booking.endTime}`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return "TODAY";
+    }
+    if (now >= start && now < end) {
+      return "LIVE";
+    }
+    if (now < start) {
+      return "UPCOMING";
+    }
+    return "COMPLETED";
+  };
+
+  const loadTodayBookings = async () => {
+    try {
+      setTodayBookingsLoading(true);
+      const all = await api.getBookingNotifications();
+      const today = getLocalDateString();
+      const filtered = (Array.isArray(all) ? all : [])
+        .filter((item) => item.slotDate === today)
+        .sort((a, b) => {
+          const left = `${a.slotDate}T${a.startTime}`;
+          const right = `${b.slotDate}T${b.startTime}`;
+          return left.localeCompare(right);
+        });
+      setTodayBookings(filtered);
+    } catch (error) {
+      console.error("Failed to load today's bookings:", error);
+      setTodayBookings([]);
+      setStatus({ text: "Failed to load today's bookings", type: "error" });
+    } finally {
+      setTodayBookingsLoading(false);
+    }
+  };
+
+  const openTodayBookingsModal = async () => {
+    setShowBookingDetailsModal(false);
+    setShowTodayBookingsModal(true);
+    await loadTodayBookings();
+  };
+
+  const openBookingDetailsModal = (item: BookingNotification) => {
+    setSelectedBookingNotification(item);
+    setShowBookingDetailsModal(true);
+  };
+
   const openBlockSlotModal = () => {
     setShowBlockSlotModal(true);
     setBlockBookingName("");
     setBlockBookingPhone("");
     setBlockBookingEmail("");
+    setBlockBookingRemarks("");
     setBlockBookingSportId("");
     setBlockBookingDate(new Date().toISOString().slice(0, 10));
     setBlockBookingSlots([]);
@@ -629,6 +692,7 @@ export default function App() {
         name: blockBookingName.trim(),
         phone: blockBookingPhone.trim(),
         email: blockBookingEmail.trim() || undefined,
+        remarks: blockBookingRemarks.trim() || undefined,
         slotId: Number(blockBookingSlotId),
       });
 
@@ -714,7 +778,7 @@ export default function App() {
               <Gamepad2 size={24} />
             </div>
             <div>
-              <h1 className="app-title">🎮 PlayBox Sports Arena</h1>
+              <h1 className="app-title">EliteClub Admin Portal</h1>
               <p className="app-subtitle">
                 {adminInfo ? `Logged in as ${adminInfo.username} (${adminInfo.role})` : "Tap RFID card to begin transaction"}
               </p>
@@ -752,6 +816,17 @@ export default function App() {
                 Owner Dashboard
               </button>
             )}
+            <button
+              type="button"
+              onClick={openTodayBookingsModal}
+              className="btn btn-outline header-action-btn"
+              style={{
+                border: "1px solid rgba(255,255,255,0.3)",
+                color: "white",
+              }}
+            >
+              Today's Bookings
+            </button>
 
             {isLoggedIn && (
               <button
@@ -1282,11 +1357,13 @@ export default function App() {
                     {bookingNotifications.slice(0, 10).map((item) => (
                       <div
                         key={item.id}
+                        onClick={() => openBookingDetailsModal(item)}
                         style={{
                           border: "1px solid #e5e7eb",
                           borderRadius: 10,
                           padding: 10,
                           background: item.seen ? "#ffffff" : "#f0f9ff",
+                          cursor: "pointer",
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
@@ -1297,15 +1374,30 @@ export default function App() {
                             </div>
                             <div style={{ color: "#6b7280", fontSize: 12, marginTop: 4 }}>{item.createdAt}</div>
                           </div>
-                          {!item.seen && (
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                             <button
-                              onClick={() => handleMarkNotificationSeen(item.id)}
-                              className="btn btn-primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openBookingDetailsModal(item);
+                              }}
+                              className="btn btn-outline"
                               style={{ height: 34, padding: "0 12px" }}
                             >
-                              Mark Seen
+                              View
                             </button>
-                          )}
+                            {!item.seen && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkNotificationSeen(item.id);
+                                }}
+                                className="btn btn-primary"
+                                style={{ height: 34, padding: "0 12px" }}
+                              >
+                                Mark Seen
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1595,6 +1687,18 @@ export default function App() {
             </div>
 
             <div className="form-group">
+              <label className="label">Remarks (Optional)</label>
+              <textarea
+                value={blockBookingRemarks}
+                onChange={(e) => setBlockBookingRemarks(e.target.value)}
+                className="input-field"
+                placeholder="Add notes for this blocked slot"
+                rows={3}
+                style={{ width: "100%", resize: "vertical" }}
+              />
+            </div>
+
+            <div className="form-group">
               <label className="label">Sport / Court *</label>
               <select
                 value={blockBookingSportId}
@@ -1669,6 +1773,142 @@ export default function App() {
                 {blockSlotSubmitting ? "Blocking..." : "Block Slot"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showBookingDetailsModal && selectedBookingNotification && (
+        <div className="modal-overlay" onClick={() => setShowBookingDetailsModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div style={{ position: "relative" }}>
+              <h2 className="modal-title">Booking Details</h2>
+              <button onClick={() => setShowBookingDetailsModal(false)} className="modal-close">✕</button>
+            </div>
+
+            <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+              <div><strong>Booking ID:</strong> #{selectedBookingNotification.bookingId}</div>
+              <div><strong>Name:</strong> {selectedBookingNotification.userName}</div>
+              <div><strong>Phone:</strong> {selectedBookingNotification.userPhone}</div>
+              <div><strong>Sport:</strong> {selectedBookingNotification.sportName}</div>
+              <div><strong>Slot:</strong> {selectedBookingNotification.slotDate} | {formatSlotRange(selectedBookingNotification.startTime, selectedBookingNotification.endTime)}</div>
+              <div><strong>Remarks:</strong> {selectedBookingNotification.remarks?.trim() || "-"}</div>
+              <div><strong>Notification Time:</strong> {selectedBookingNotification.createdAt}</div>
+              <div><strong>Status:</strong> {selectedBookingNotification.seen ? "Seen" : "Unseen"}</div>
+            </div>
+
+            <div
+              style={{
+                marginBottom: 12,
+                padding: 10,
+                borderRadius: 8,
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                color: "#334155",
+                fontSize: 13,
+              }}
+            >
+              {selectedBookingNotification.message}
+            </div>
+
+            <div className="modal-actions">
+              <button
+                onClick={() => setShowBookingDetailsModal(false)}
+                className="btn btn-outline"
+                style={{ flex: 1 }}
+              >
+                Close
+              </button>
+              <button
+                onClick={openTodayBookingsModal}
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+              >
+                Today's Bookings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTodayBookingsModal && (
+        <div className="modal-overlay" onClick={() => setShowTodayBookingsModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 760 }}>
+            <div style={{ position: "relative" }}>
+              <h2 className="modal-title">Today's Bookings</h2>
+              <button onClick={() => setShowTodayBookingsModal(false)} className="modal-close">✕</button>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ color: "#374151", fontSize: 14 }}>
+                Date: <strong>{getLocalDateString()}</strong> | Total: <strong>{todayBookings.length}</strong>
+              </div>
+              <button
+                onClick={loadTodayBookings}
+                className="btn btn-outline"
+                disabled={todayBookingsLoading}
+                style={{ height: 34, padding: "0 12px" }}
+              >
+                {todayBookingsLoading ? "Loading..." : "Refresh"}
+              </button>
+            </div>
+
+            {todayBookingsLoading ? (
+              <p style={{ color: "#6b7280", margin: 0 }}>Loading today's bookings...</p>
+            ) : todayBookings.length === 0 ? (
+              <p style={{ color: "#6b7280", margin: 0 }}>No bookings found for today.</p>
+            ) : (
+              <div style={{ display: "grid", gap: 10, maxHeight: "60vh", overflowY: "auto", paddingRight: 4 }}>
+                {todayBookings.map((item) => {
+                  const bookingStatus = getTodayBookingStatus(item);
+                  const statusColor =
+                    bookingStatus === "LIVE" ? "#16a34a"
+                      : bookingStatus === "UPCOMING" ? "#2563eb"
+                        : "#6b7280";
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => openBookingDetailsModal(item)}
+                      style={{
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 12,
+                        padding: 12,
+                        background: "#ffffff",
+                        boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                        <div style={{ fontWeight: 700, color: "#111827" }}>
+                          {item.sportName}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: statusColor,
+                            border: `1px solid ${statusColor}55`,
+                            borderRadius: 999,
+                            padding: "2px 10px",
+                          }}
+                        >
+                          {bookingStatus}
+                        </span>
+                      </div>
+                      <div style={{ color: "#374151", fontSize: 14, marginBottom: 4 }}>
+                        {item.userName} ({item.userPhone})
+                      </div>
+                      <div style={{ color: "#374151", fontSize: 14, marginBottom: 4 }}>
+                        {item.slotDate} | {formatSlotRange(item.startTime, item.endTime)}
+                      </div>
+                      <div style={{ color: "#64748b", fontSize: 13 }}>
+                        Remarks: {item.remarks?.trim() || "-"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}

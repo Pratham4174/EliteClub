@@ -26,6 +26,7 @@ public class Booking {
 
     private String paymentMode; // WALLET / CASH / ONLINE
 
+    private String remarks;
+
     private String createdAt;
 }
-
