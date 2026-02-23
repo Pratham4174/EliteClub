@@ -1391,14 +1391,19 @@ export default function App() {
                 ) : (
                   <div style={{ display: "grid", gap: 8 }}>
                     {bookingNotifications.slice(0, 10).map((item) => (
+                      (() => {
+                        const hasRemarks = Boolean(item.remarks && item.remarks.trim());
+                        const cardBorder = hasRemarks ? "#ef4444" : "#e5e7eb";
+                        const cardBg = hasRemarks ? "#fef2f2" : item.seen ? "#ffffff" : "#f0f9ff";
+                        return (
                       <div
                         key={item.id}
                         onClick={() => openBookingDetailsModal(item)}
                         style={{
-                          border: "1px solid #e5e7eb",
+                          border: `1px solid ${cardBorder}`,
                           borderRadius: 10,
                           padding: 10,
-                          background: item.seen ? "#ffffff" : "#f0f9ff",
+                          background: cardBg,
                           cursor: "pointer",
                         }}
                       >
@@ -1436,6 +1441,8 @@ export default function App() {
                           </div>
                         </div>
                       </div>
+                        );
+                      })()
                     ))}
                   </div>
                 )}
