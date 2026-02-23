@@ -606,12 +606,48 @@ export default function App() {
     return `${year}-${month}-${day}`;
   };
 
+  const parseSlotDateTime = (slotDate: string, slotTime: string): Date | null => {
+    if (!slotDate || !slotTime) return null;
+    const dateParts = slotDate.split("-").map((part) => Number(part));
+    if (dateParts.length !== 3 || dateParts.some((part) => Number.isNaN(part))) {
+      return null;
+    }
+    const [year, month, day] = dateParts;
+
+    const timeText = slotTime.trim().toUpperCase();
+    let hours = 0;
+    let minutes = 0;
+
+    if (timeText.includes("AM") || timeText.includes("PM")) {
+      const match = timeText.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+      if (!match) return null;
+      hours = Number(match[1]);
+      minutes = Number(match[2]);
+      const period = match[3];
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+      if (period === "AM" && hours === 12) hours = 0;
+      if (period === "PM" && hours < 12) hours += 12;
+    } else {
+      const match = timeText.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+      if (!match) return null;
+      hours = Number(match[1]);
+      minutes = Number(match[2]);
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+    }
+
+    return new Date(year, month - 1, day, hours, minutes, 0, 0);
+  };
+
   const getTodayBookingStatus = (booking: BookingNotification) => {
     const now = new Date();
-    const start = new Date(`${booking.slotDate}T${booking.startTime}`);
-    const end = new Date(`${booking.slotDate}T${booking.endTime}`);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    const start = parseSlotDateTime(booking.slotDate, booking.startTime);
+    const endBase = parseSlotDateTime(booking.slotDate, booking.endTime);
+    if (!start || !endBase) {
       return "TODAY";
+    }
+    const end = new Date(endBase.getTime());
+    if (end <= start) {
+      end.setDate(end.getDate() + 1);
     }
     if (now >= start && now < end) {
       return "LIVE";
@@ -630,9 +666,9 @@ export default function App() {
       const filtered = (Array.isArray(all) ? all : [])
         .filter((item) => item.slotDate === today)
         .sort((a, b) => {
-          const left = `${a.slotDate}T${a.startTime}`;
-          const right = `${b.slotDate}T${b.startTime}`;
-          return left.localeCompare(right);
+          const left = parseSlotDateTime(a.slotDate, a.startTime)?.getTime() ?? 0;
+          const right = parseSlotDateTime(b.slotDate, b.startTime)?.getTime() ?? 0;
+          return left - right;
         });
       setTodayBookings(filtered);
     } catch (error) {
