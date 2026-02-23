@@ -22,6 +22,6 @@ public class Sport {
     private Float pricePerHour;
     private Boolean active;
 
-    @Column(name = "ismuplislot", nullable = false, columnDefinition = "boolean default false")
+    @Column(name = "ismuplislot")
     private Boolean ismuplislot = false;
 }
