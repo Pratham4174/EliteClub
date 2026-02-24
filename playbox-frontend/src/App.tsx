@@ -936,9 +936,9 @@ export default function App() {
                   <table className="table" style={{ tableLayout: "auto", width: "100%" }}>
                     <thead>
                       <tr className="table-header">
+                        <th className="table-header-cell">Slot</th>
                         <th className="table-header-cell">Booking ID</th>
                         <th className="table-header-cell">Sport</th>
-                        <th className="table-header-cell">Slot</th>
                         <th className="table-header-cell">User</th>
                         <th className="table-header-cell">Phone</th>
                         <th className="table-header-cell">Remarks</th>
@@ -952,6 +952,8 @@ export default function App() {
                           bookingStatus === "LIVE" ? "#16a34a"
                             : bookingStatus === "UPCOMING" ? "#2563eb"
                               : "#6b7280";
+                        const startDateTime = parseSlotDateTime(item.slotDate, item.startTime);
+                        const slotEmoji = startDateTime && startDateTime.getHours() >= 18 ? "🌙" : "☀️";
                         return (
                           <tr
                             key={item.id}
@@ -959,11 +961,13 @@ export default function App() {
                             onClick={() => openBookingDetailsModal(item)}
                             style={{ cursor: "pointer" }}
                           >
+                            <td className="table-cell" style={{ minWidth: 220, whiteSpace: "nowrap" }}>
+                              <span style={{ fontWeight: 700 }}>
+                                {slotEmoji} {formatSlotRange(item.startTime, item.endTime)}
+                              </span>
+                            </td>
                             <td className="table-cell">#{item.bookingId}</td>
                             <td className="table-cell">{item.sportName}</td>
-                            <td className="table-cell">
-                              {formatSlotRange(item.startTime, item.endTime)}
-                            </td>
                             <td className="table-cell" style={{ minWidth: 140 }}>{item.userName}</td>
                             <td className="table-cell" style={{ minWidth: 120 }}>{item.userPhone}</td>
                             <td className="table-cell" style={{ minWidth: 220, whiteSpace: "normal", wordBreak: "break-word" }}>
