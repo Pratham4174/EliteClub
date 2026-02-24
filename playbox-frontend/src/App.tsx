@@ -924,7 +924,7 @@ export default function App() {
               </div>
 
               <p style={{ color: "#374151", margin: "0 0 10px 0" }}>
-                Date: <strong>{getLocalDateString()}</strong> | Total: <strong>{todayBookings.length}</strong>
+                Date: <strong>{formatDayAndDate(getLocalDateString())}</strong> | Total: <strong>{todayBookings.length}</strong>
               </p>
 
               {todayBookingsLoading ? (
@@ -962,7 +962,7 @@ export default function App() {
                             <td className="table-cell">#{item.bookingId}</td>
                             <td className="table-cell">{item.sportName}</td>
                             <td className="table-cell">
-                              {formatDayAndDate(item.slotDate)} | {formatSlotRange(item.startTime, item.endTime)}
+                              {formatSlotRange(item.startTime, item.endTime)}
                             </td>
                             <td className="table-cell" style={{ minWidth: 140 }}>{item.userName}</td>
                             <td className="table-cell" style={{ minWidth: 120 }}>{item.userPhone}</td>
