@@ -855,7 +855,8 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    padding: 20px;
+    padding: 16px;
+    overflow-y: auto;
   }
   
   .modal {
@@ -864,6 +865,8 @@
     padding: 24px;
     width: 100%;
     max-width: 400px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     animation: modalSlideIn 0.3s ease-out;
   }
@@ -922,6 +925,45 @@
   .modal-actions .btn {
     flex: 1;
     padding: 12px;
+  }
+
+  @media (max-width: 768px) {
+    .modal-overlay {
+      align-items: flex-end;
+      padding: 8px;
+    }
+
+    .modal {
+      max-width: 100%;
+      max-height: 88vh;
+      border-radius: 14px 14px 10px 10px;
+      padding: 16px;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+      padding-right: 28px;
+    }
+
+    .modal .form-group {
+      margin-bottom: 12px;
+    }
+
+    .modal-actions {
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .modal-actions .btn {
+      width: 100%;
+    }
+
+    .modal-close {
+      top: 10px;
+      right: 10px;
+    }
   }
   
   /* Amount preview in modal */
