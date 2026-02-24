@@ -93,7 +93,7 @@ export default function App() {
   const [bookingNotificationsLoading, setBookingNotificationsLoading] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [selectedBookingNotification, setSelectedBookingNotification] = useState<BookingNotification | null>(null);
-  const [showTodayBookingsModal, setShowTodayBookingsModal] = useState(false);
+  const [showTodayBookingsPage, setShowTodayBookingsPage] = useState(false);
   const [todayBookingsLoading, setTodayBookingsLoading] = useState(false);
   const [todayBookings, setTodayBookings] = useState<BookingNotification[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -680,9 +680,9 @@ export default function App() {
     }
   };
 
-  const openTodayBookingsModal = async () => {
+  const openTodayBookingsPage = async () => {
     setShowBookingDetailsModal(false);
-    setShowTodayBookingsModal(true);
+    setShowTodayBookingsPage(true);
     await loadTodayBookings();
   };
 
@@ -854,7 +854,7 @@ export default function App() {
             )}
             <button
               type="button"
-              onClick={openTodayBookingsModal}
+              onClick={openTodayBookingsPage}
               className="btn btn-outline header-action-btn"
               style={{
                 border: "1px solid rgba(255,255,255,0.3)",
@@ -886,6 +886,97 @@ export default function App() {
       {/* Main Content */}
       <main className="app-main">
         <div className="content-container">
+          {showTodayBookingsPage ? (
+            <div className="card admin-panel">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+                <h2 className="section-title" style={{ margin: 0 }}>Today's Bookings</h2>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => setShowTodayBookingsPage(false)}
+                    className="btn btn-outline"
+                    style={{ height: 36, padding: "0 14px" }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={loadTodayBookings}
+                    className="btn btn-primary"
+                    disabled={todayBookingsLoading}
+                    style={{ height: 36, padding: "0 14px" }}
+                  >
+                    {todayBookingsLoading ? "Loading..." : "Refresh"}
+                  </button>
+                </div>
+              </div>
+
+              <p style={{ color: "#374151", margin: "0 0 10px 0" }}>
+                Date: <strong>{getLocalDateString()}</strong> | Total: <strong>{todayBookings.length}</strong>
+              </p>
+
+              {todayBookingsLoading ? (
+                <p style={{ color: "#6b7280", margin: 0 }}>Loading today's bookings...</p>
+              ) : todayBookings.length === 0 ? (
+                <p style={{ color: "#6b7280", margin: 0 }}>No bookings found for today.</p>
+              ) : (
+                <div className="table-container">
+                  <table className="table">
+                    <thead>
+                      <tr className="table-header">
+                        <th className="table-header-cell">Booking ID</th>
+                        <th className="table-header-cell">Sport</th>
+                        <th className="table-header-cell">Slot</th>
+                        <th className="table-header-cell">User</th>
+                        <th className="table-header-cell">Phone</th>
+                        <th className="table-header-cell">Remarks</th>
+                        <th className="table-header-cell">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {todayBookings.map((item) => {
+                        const bookingStatus = getTodayBookingStatus(item);
+                        const statusColor =
+                          bookingStatus === "LIVE" ? "#16a34a"
+                            : bookingStatus === "UPCOMING" ? "#2563eb"
+                              : "#6b7280";
+                        return (
+                          <tr
+                            key={item.id}
+                            className="table-row"
+                            onClick={() => openBookingDetailsModal(item)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <td className="table-cell">#{item.bookingId}</td>
+                            <td className="table-cell">{item.sportName}</td>
+                            <td className="table-cell">
+                              {item.slotDate} | {formatSlotRange(item.startTime, item.endTime)}
+                            </td>
+                            <td className="table-cell">{item.userName}</td>
+                            <td className="table-cell">{item.userPhone}</td>
+                            <td className="table-cell">{item.remarks?.trim() || "-"}</td>
+                            <td className="table-cell">
+                              <span
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  color: statusColor,
+                                  border: `1px solid ${statusColor}55`,
+                                  borderRadius: 999,
+                                  padding: "2px 8px",
+                                }}
+                              >
+                                {bookingStatus}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
           {/* Scanner Section */}
           {!isAdminView && (
             <div className="card section">
@@ -1449,6 +1540,8 @@ export default function App() {
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
         
         {/* Deduct Modal */}
@@ -1862,96 +1955,13 @@ export default function App() {
                 Close
               </button>
               <button
-                onClick={openTodayBookingsModal}
+                onClick={openTodayBookingsPage}
                 className="btn btn-primary"
                 style={{ flex: 1 }}
               >
                 Today's Bookings
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {showTodayBookingsModal && (
-        <div className="modal-overlay" onClick={() => setShowTodayBookingsModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 760 }}>
-            <div style={{ position: "relative" }}>
-              <h2 className="modal-title">Today's Bookings</h2>
-              <button onClick={() => setShowTodayBookingsModal(false)} className="modal-close">✕</button>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div style={{ color: "#374151", fontSize: 14 }}>
-                Date: <strong>{getLocalDateString()}</strong> | Total: <strong>{todayBookings.length}</strong>
-              </div>
-              <button
-                onClick={loadTodayBookings}
-                className="btn btn-outline"
-                disabled={todayBookingsLoading}
-                style={{ height: 34, padding: "0 12px" }}
-              >
-                {todayBookingsLoading ? "Loading..." : "Refresh"}
-              </button>
-            </div>
-
-            {todayBookingsLoading ? (
-              <p style={{ color: "#6b7280", margin: 0 }}>Loading today's bookings...</p>
-            ) : todayBookings.length === 0 ? (
-              <p style={{ color: "#6b7280", margin: 0 }}>No bookings found for today.</p>
-            ) : (
-              <div style={{ display: "grid", gap: 10, maxHeight: "60vh", overflowY: "auto", paddingRight: 4 }}>
-                {todayBookings.map((item) => {
-                  const bookingStatus = getTodayBookingStatus(item);
-                  const statusColor =
-                    bookingStatus === "LIVE" ? "#16a34a"
-                      : bookingStatus === "UPCOMING" ? "#2563eb"
-                        : "#6b7280";
-
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => openBookingDetailsModal(item)}
-                      style={{
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 12,
-                        padding: 12,
-                        background: "#ffffff",
-                        boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-                        <div style={{ fontWeight: 700, color: "#111827" }}>
-                          {item.sportName}
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: statusColor,
-                            border: `1px solid ${statusColor}55`,
-                            borderRadius: 999,
-                            padding: "2px 10px",
-                          }}
-                        >
-                          {bookingStatus}
-                        </span>
-                      </div>
-                      <div style={{ color: "#374151", fontSize: 14, marginBottom: 4 }}>
-                        {item.userName} ({item.userPhone})
-                      </div>
-                      <div style={{ color: "#374151", fontSize: 14, marginBottom: 4 }}>
-                        {item.slotDate} | {formatSlotRange(item.startTime, item.endTime)}
-                      </div>
-                      <div style={{ color: "#64748b", fontSize: 13 }}>
-                        Remarks: {item.remarks?.trim() || "-"}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
       )}

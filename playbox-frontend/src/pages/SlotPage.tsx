@@ -323,6 +323,18 @@ export default function SlotPage() {
                 <strong>Slot:</strong> {formatSlotRange(confirmSlot.startTime, confirmSlot.endTime)}
               </div>
               <div style={{ color: "#334155", fontSize: 14 }}><strong>Payment:</strong> Elite Card Wallet</div>
+              <div
+                style={{
+                  color: "#b45309",
+                  fontSize: 13,
+                  background: "#fffbeb",
+                  border: "1px solid #fde68a",
+                  borderRadius: 8,
+                  padding: "8px 10px",
+                }}
+              >
+                In case of bad weather, amount will be refunded within 3 days.
+              </div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button
@@ -462,6 +474,20 @@ export default function SlotPage() {
 
       <div style={{ marginTop: 12, marginBottom: 8, color: "#334155", fontWeight: 600 }}>
         Payment Mode: Elite Card Wallet
+      </div>
+      <div
+        style={{
+          marginBottom: 12,
+          background: "#fffbeb",
+          border: "1px solid #fde68a",
+          color: "#b45309",
+          borderRadius: 8,
+          padding: "8px 12px",
+          fontSize: 13,
+          fontWeight: 600,
+        }}
+      >
+        In case of bad weather, amount will be refunded within 3 days.
       </div>
 
       <div style={{ marginTop: 12 }}>
