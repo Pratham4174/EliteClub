@@ -638,6 +638,16 @@ export default function App() {
     return new Date(year, month - 1, day, hours, minutes, 0, 0);
   };
 
+  const formatDayAndDate = (slotDate: string): string => {
+    const dateOnly = parseSlotDateTime(slotDate, "00:00");
+    if (!dateOnly) return slotDate;
+    return dateOnly.toLocaleDateString("en-IN", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+  };
+
   const getTodayBookingStatus = (booking: BookingNotification) => {
     const now = new Date();
     const start = parseSlotDateTime(booking.slotDate, booking.startTime);
@@ -823,8 +833,12 @@ export default function App() {
           <div className="header-actions">
             <button
               onClick={() => {
-                setIsAdminView(!isAdminView);
-                if (!isAdminView) {
+                if (showTodayBookingsPage) {
+                  setShowTodayBookingsPage(false);
+                }
+                const nextAdminView = !isAdminView;
+                setIsAdminView(nextAdminView);
+                if (nextAdminView) {
                   console.log("Switching to admin view, loading users...");
                   loadAllUsers();
                 }
@@ -919,7 +933,7 @@ export default function App() {
                 <p style={{ color: "#6b7280", margin: 0 }}>No bookings found for today.</p>
               ) : (
                 <div className="table-container">
-                  <table className="table">
+                  <table className="table" style={{ tableLayout: "auto", width: "100%" }}>
                     <thead>
                       <tr className="table-header">
                         <th className="table-header-cell">Booking ID</th>
@@ -948,11 +962,13 @@ export default function App() {
                             <td className="table-cell">#{item.bookingId}</td>
                             <td className="table-cell">{item.sportName}</td>
                             <td className="table-cell">
-                              {item.slotDate} | {formatSlotRange(item.startTime, item.endTime)}
+                              {formatDayAndDate(item.slotDate)} | {formatSlotRange(item.startTime, item.endTime)}
                             </td>
-                            <td className="table-cell">{item.userName}</td>
-                            <td className="table-cell">{item.userPhone}</td>
-                            <td className="table-cell">{item.remarks?.trim() || "-"}</td>
+                            <td className="table-cell" style={{ minWidth: 140 }}>{item.userName}</td>
+                            <td className="table-cell" style={{ minWidth: 120 }}>{item.userPhone}</td>
+                            <td className="table-cell" style={{ minWidth: 220, whiteSpace: "normal", wordBreak: "break-word" }}>
+                              {item.remarks?.trim() || "-"}
+                            </td>
                             <td className="table-cell">
                               <span
                                 style={{

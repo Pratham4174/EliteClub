@@ -43,6 +43,7 @@ public class UserServiceImpl {
     private final BookingRepository bookingRepository;
     private final AdminUserRepository adminUserRepository;
     private final SportRepository sportRepository;
+    private final SlotService slotService;
     private final TwilioSmsService twilioSmsService;
     private final BookingNotificationService bookingNotificationService;
 
@@ -113,6 +114,9 @@ public class UserServiceImpl {
         if (slotId != null) {
             Slot slot = slotRepository.findWithLockingById(slotId)
                     .orElseThrow(() -> new RuntimeException("Slot not found"));
+            if (!slotService.isSwimmingSlotAllowed(slot.getSport(), slot.getStartTime())) {
+                throw new RuntimeException("Swimming Pool slots are available only between 08:00 and 22:00");
+            }
             boolean multiSlotSport = isMultiSlotSport(slot.getSport());
 
             if (!multiSlotSport && Boolean.TRUE.equals(slot.getBooked())) {

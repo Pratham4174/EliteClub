@@ -36,6 +36,7 @@ public class BookingService {
     private final SportRepository sportRepository;
     private final PlayBoxUserRepository userRepository;
     private final TransactionRepository transactionRepository;
+    private final SlotService slotService;
     private final TwilioSmsService twilioSmsService;
     private final BookingNotificationService bookingNotificationService;
 
@@ -48,6 +49,9 @@ public class BookingService {
 
         // 2️⃣ Get sport directly from slot
         Sport sport = slot.getSport();
+        if (!slotService.isSwimmingSlotAllowed(sport, slot.getStartTime())) {
+            throw new RuntimeException("Swimming Pool slots are available only between 08:00 and 22:00");
+        }
         boolean multiSlotSport = isMultiSlotSport(sport);
 
         if (!multiSlotSport && Boolean.TRUE.equals(slot.getBooked())) {
@@ -139,6 +143,9 @@ public class BookingService {
                 .orElseThrow(() -> new RuntimeException("Slot not found"));
 
         Sport sport = slot.getSport();
+        if (!slotService.isSwimmingSlotAllowed(sport, slot.getStartTime())) {
+            throw new RuntimeException("Swimming Pool slots are available only between 08:00 and 22:00");
+        }
         boolean multiSlotSport = isMultiSlotSport(sport);
 
         if (!multiSlotSport && Boolean.TRUE.equals(slot.getBooked())) {
@@ -202,7 +209,7 @@ public class BookingService {
         Sport sport = sportRepository.findById(sportId)
                 .orElseThrow(() -> new RuntimeException("Sport not found"));
 
-        List<Slot> slots = slotRepository.findBySport_IdAndSlotDate(sportId, date);
+        List<Slot> slots = slotService.getVisibleSlotsForDate(sportId, date);
         List<Long> slotIds = slots.stream().map(Slot::getId).toList();
 
         Map<Long, Booking> bookingBySlotId = new HashMap<>();

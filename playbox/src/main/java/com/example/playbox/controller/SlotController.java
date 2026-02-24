@@ -29,7 +29,7 @@ public class SlotController {
             @RequestParam String date
     ) {
         slotService.generateSlotsForDate(sportId, date);
-        return slotRepository.findBySport_IdAndSlotDate(sportId, date);
+        return slotService.getVisibleSlotsForDate(sportId, date);
     }
 
     @GetMapping("/{slotId}")
@@ -47,4 +47,3 @@ public class SlotController {
         return dto;
     }
 }
-
